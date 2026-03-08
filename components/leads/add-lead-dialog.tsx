@@ -10,6 +10,7 @@ import {
     type Project,
     type TeamMember,
 } from "@/lib/api";
+import { toast } from "sonner";
 
 import {
     Dialog,
@@ -81,14 +82,12 @@ export function AddLeadDialog({
     const [projects, setProjects] = useState<Project[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
 
     // Load dropdowns on first open
     useEffect(() => {
         if (!open) return;
         setForm({ ...EMPTY_FORM, stage: defaultStageId ?? "" });
-        setError(null);
         setFieldErrors({});
 
         Promise.allSettled([fetchStages(), fetchProjects(), fetchTeamMembers()]).then(
@@ -125,7 +124,6 @@ export function AddLeadDialog({
         if (!validate()) return;
 
         setSubmitting(true);
-        setError(null);
 
         // The write API accepts IDs for relational fields, not nested objects.
         // Use a plain Record here rather than Partial<Lead> which expects ProjectRef.
@@ -145,10 +143,11 @@ export function AddLeadDialog({
 
         try {
             const created = await createLead(payload);
+            toast.success("Lead created successfully");
             onSuccess?.(created);
             onOpenChange(false);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Something went wrong");
+            toast.error(err instanceof Error ? err.message : "Something went wrong");
         } finally {
             setSubmitting(false);
         }
@@ -166,14 +165,6 @@ export function AddLeadDialog({
 
                 <form onSubmit={handleSubmit} noValidate>
                     <div className="grid gap-5 py-4">
-                        {/* Error banner */}
-                        {error && (
-                            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-                                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                                <span>{error}</span>
-                            </div>
-                        )}
-
                         {/* ── Contact Info ── */}
                         <fieldset className="space-y-4">
                             <legend className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">

@@ -7,6 +7,7 @@ import { formatDistanceToNow } from "date-fns";
 
 import type { Lead, Stage } from "@/types/leads";
 import { fetchLeads, fetchStages, updateLeadStage } from "@/lib/api";
+import { toast } from "sonner";
 import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
 import { LeadCard } from "@/components/leads/lead-card";
 

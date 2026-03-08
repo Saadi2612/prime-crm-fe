@@ -39,18 +39,30 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
       }
     }
 
-    // Try to extract a clean `detail` message from the JSON body
+    // Try to extract a clean message from the JSON body
     let message = STATUS_MESSAGES[res.status] ?? `Unexpected error (${res.status})`;
     try {
       const body = await res.json();
-      if (body?.detail && typeof body.detail === "string") {
-        message = body.detail;
+      if (typeof body === "object" && body !== null) {
+        // If it's a field-specific error (e.g., { email: ["..."] }), use the first message
+        const firstValue = Object.values(body)[0];
+        if (Array.isArray(firstValue) && typeof firstValue[0] === "string") {
+          message = firstValue[0];
+        } else if (typeof body.detail === "string") {
+          message = body.detail;
+        } else if (typeof body.message === "string") {
+          message = body.message;
+        }
       }
     } catch {
-      // body wasn't JSON – keep the default message
+      // body wasn't JSON or didn't have a message – keep the default
     }
 
     throw new Error(message);
+  }
+
+  if (res.status === 204) {
+    return undefined as unknown as T;
   }
 
   return res.json() as Promise<T>;
@@ -79,6 +91,59 @@ export async function loginApi(
   return {
     tokens: { access: data.access, refresh: data.refresh },
     user: data.user,
+  } as AuthSession;
+}
+
+export async function inviteUser(data: {
+  email: string;
+  phone_number?: string;
+  role: string;
+}): Promise<{ detail: string; token: string }> {
+  return apiFetch<{ detail: string; token: string }>("/auth/invite/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function acceptInvite(data: {
+  token: string;
+  first_name: string;
+  last_name: string;
+  phone_number?: string;
+  password: string;
+  confirm_password: string;
+}): Promise<AuthSession> {
+  const res = await fetch(`${BASE_URL}/auth/accept-invite/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    let message = STATUS_MESSAGES[res.status] ?? `Unexpected error (${res.status})`;
+    try {
+      const body = await res.json();
+      if (typeof body === "object") {
+        // Return first error message if validation fails
+        const firstValue = Object.values(body)[0];
+        if (Array.isArray(firstValue) && typeof firstValue[0] === "string") {
+            message = firstValue[0];
+        } else if (typeof body.detail === "string") {
+            message = body.detail;
+        } else if (typeof body.non_field_errors === "string") {
+            message = body.non_field_errors;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+
+  const responseData = await res.json();
+  return {
+    tokens: { access: responseData.access, refresh: responseData.refresh },
+    user: responseData.user,
   } as AuthSession;
 }
 
@@ -201,4 +266,31 @@ export interface TeamMember {
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
   return apiFetch<TeamMember[]>("/auth/users/");
+}
+
+// ── Invitations ───────────────────────────────────────────────────────────────
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  phone_number: string | null;
+  role: string;
+  invited_by_email: string;
+  created_at: string;
+  expires_at: string;
+  is_expired: boolean;
+}
+
+export async function fetchPendingInvitations(): Promise<PendingInvitation[]> {
+  return apiFetch<PendingInvitation[]>("/auth/invitations/pending/");
+}
+
+export async function deleteInvitation(id: string): Promise<void> {
+  return apiFetch<void>(`/auth/invitations/${id}/`, { method: "DELETE" });
+}
+
+export async function resendInvitation(id: string): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>(`/auth/invitations/${id}/resend/`, {
+    method: "POST",
+  });
 }

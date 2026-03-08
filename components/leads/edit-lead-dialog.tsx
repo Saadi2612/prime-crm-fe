@@ -10,6 +10,7 @@ import {
     type Project,
     type TeamMember,
 } from "@/lib/api";
+import { toast } from "sonner";
 
 import {
     Dialog,
@@ -82,14 +83,12 @@ export function EditLeadDialog({ open, onOpenChange, lead, onSuccess }: EditLead
     const [projects, setProjects] = useState<Project[]>([]);
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
 
     // Reset form to fresh lead data whenever dialog opens
     useEffect(() => {
         if (!open) return;
         setForm(toFormState(lead));
-        setError(null);
         setFieldErrors({});
 
         Promise.allSettled([fetchStages(), fetchProjects(), fetchTeamMembers()]).then(
@@ -123,7 +122,6 @@ export function EditLeadDialog({ open, onOpenChange, lead, onSuccess }: EditLead
         if (!validate()) return;
 
         setSubmitting(true);
-        setError(null);
 
         // The write API accepts IDs for relational fields, not nested objects.
         // Use a plain Record here rather than Partial<Lead> which expects ProjectRef.
@@ -143,10 +141,11 @@ export function EditLeadDialog({ open, onOpenChange, lead, onSuccess }: EditLead
 
         try {
             const updated = await updateLead(lead.id, payload);
+            toast.success("Lead updated successfully");
             onSuccess?.(updated);
             onOpenChange(false);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Something went wrong");
+            toast.error(err instanceof Error ? err.message : "Something went wrong");
         } finally {
             setSubmitting(false);
         }
@@ -164,14 +163,6 @@ export function EditLeadDialog({ open, onOpenChange, lead, onSuccess }: EditLead
 
                 <form onSubmit={handleSubmit} noValidate>
                     <div className="grid gap-5 py-4">
-                        {/* Error banner */}
-                        {error && (
-                            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-                                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                                <span>{error}</span>
-                            </div>
-                        )}
-
                         {/* ── Contact Info ── */}
                         <fieldset className="space-y-4">
                             <legend className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
@@ -379,9 +370,8 @@ function toFormState(lead: Lead): FormState {
         job_title: lead.job_title ?? "",
         min_budget: lead.min_budget != null ? String(lead.min_budget) : "",
         max_budget: lead.max_budget != null ? String(lead.max_budget) : "",
-        // API may return ISO datetime; keep only date part
         next_follow_up: lead.next_follow_up ? lead.next_follow_up.slice(0, 10) : "",
-        notes: lead.notes ?? "",
+        notes: "",
         stage: stageId(lead.stage),
         project: projectId(lead.project),
         assigned_to: assignedId(lead.assigned_to),

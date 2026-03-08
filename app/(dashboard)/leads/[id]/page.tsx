@@ -23,6 +23,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { Lead, LeadNote, ProjectRef, StageRef } from "@/types/leads";
 import type { Stage } from "@/types/leads";
 import { fetchLead, fetchStages, deleteLead, updateLeadStage, updateLead, fetchLeadNotes, createLeadNote } from "@/lib/api";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +40,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { EditLeadDialog } from "@/components/leads/edit-lead-dialog";
 import { formatBudget } from "@/lib/utils";
+import { useAuth } from "@/context/auth-context";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -63,6 +65,7 @@ function initials(name: string) {
 export default function LeadDetailPage() {
     const { id } = useParams<{ id: string }>();
     const router = useRouter();
+    const { user } = useAuth();
 
     const [lead, setLead] = useState<Lead | null>(null);
     const [stages, setStages] = useState<Stage[]>([]);
@@ -77,7 +80,6 @@ export default function LeadDetailPage() {
     const [notesLoading, setNotesLoading] = useState(true);
     const [newNoteBody, setNewNoteBody] = useState("");
     const [addingNote, setAddingNote] = useState(false);
-    const [noteError, setNoteError] = useState<string | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const load = useCallback(() => {
@@ -109,8 +111,9 @@ export default function LeadDetailPage() {
         try {
             const updated = await updateLeadStage(lead.id, newStageId);
             setLead(updated);
+            toast.success("Stage updated successfully");
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to update stage");
+            toast.error(e instanceof Error ? e.message : "Failed to update stage");
         } finally {
             setChangingStage(false);
         }
@@ -119,13 +122,13 @@ export default function LeadDetailPage() {
     async function handleAddNote() {
         if (!lead || !newNoteBody.trim()) return;
         setAddingNote(true);
-        setNoteError(null);
         try {
             const created = await createLeadNote(lead.id, newNoteBody.trim());
             setNotes((prev) => [created, ...prev]);
             setNewNoteBody("");
+            toast.success("Note added successfully");
         } catch (e) {
-            setNoteError(e instanceof Error ? e.message : "Failed to save note");
+            toast.error(e instanceof Error ? e.message : "Failed to save note");
         } finally {
             setAddingNote(false);
         }
@@ -136,9 +139,10 @@ export default function LeadDetailPage() {
         setDeleting(true);
         try {
             await deleteLead(lead.id);
+            toast.success("Lead deleted successfully");
             router.push("/leads");
         } catch (e) {
-            setError(e instanceof Error ? e.message : "Failed to delete lead");
+            toast.error(e instanceof Error ? e.message : "Failed to delete lead");
             setDeleting(false);
         }
     }
@@ -233,36 +237,38 @@ export default function LeadDetailPage() {
                         Edit
                     </Button>
 
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-                                disabled={deleting}
-                            >
-                                <Trash2 className="h-4 w-4" />
-                                Delete
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Lead</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to delete <strong>{lead.full_name}</strong>? This cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                    onClick={handleDelete}
+                    {user?.role === "admin" && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                                    disabled={deleting}
                                 >
+                                    <Trash2 className="h-4 w-4" />
                                     Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete Lead</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Are you sure you want to delete <strong>{lead.full_name}</strong>? This cannot be undone.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction
+                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                        onClick={handleDelete}
+                                    >
+                                        Delete
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    )}
                 </div>
             </div>
 
@@ -312,7 +318,7 @@ export default function LeadDetailPage() {
                         );
                     })}
                 </div>
-                {error && <p className="text-xs text-destructive mt-3">{error}</p>}
+                {/* {error && <p className="text-xs text-destructive mt-3">{error}</p>} */}
             </div>
 
             {/* ── Info grid ─────────────────────────────────────────────── */}
@@ -469,9 +475,6 @@ export default function LeadDetailPage() {
                             }
                         }}
                     />
-                    {noteError && (
-                        <p className="text-xs text-destructive">{noteError}</p>
-                    )}
                     <div className="flex justify-end">
                         <Button
                             size="sm"

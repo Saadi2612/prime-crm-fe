@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Loader2, Building2 } from "lucide-react";
 
 export default function LoginPage() {
@@ -23,19 +23,18 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [isPending, startTransition] = useTransition();
 
     function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
-        setError(null);
 
         startTransition(async () => {
             try {
                 await login(email, password);
+                toast.success("Welcome back!");
                 router.replace("/dashboard");
             } catch (err: unknown) {
-                setError(
+                toast.error(
                     err instanceof Error ? err.message : "Invalid email or password."
                 );
             }
@@ -59,12 +58,6 @@ export default function LoginPage() {
 
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    {error && (
-                        <Alert variant="destructive">
-                            <AlertDescription>{error}</AlertDescription>
-                        </Alert>
-                    )}
-
                     <div className="space-y-2">
                         <Label htmlFor="email">Email address</Label>
                         <Input

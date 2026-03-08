@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createProject, type Project, type ProjectType, type SizeUnit } from "@/lib/api";
+import { toast } from "sonner";
 
 import {
     Dialog,
@@ -68,7 +69,6 @@ export function AddProjectDialog({ open, onOpenChange, onSuccess }: AddProjectDi
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
     const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -105,7 +105,6 @@ export function AddProjectDialog({ open, onOpenChange, onSuccess }: AddProjectDi
             setForm(EMPTY_FORM);
             setImageFile(null);
             setImagePreview(null);
-            setError(null);
             setFieldErrors({});
         }
         onOpenChange(open);
@@ -116,7 +115,6 @@ export function AddProjectDialog({ open, onOpenChange, onSuccess }: AddProjectDi
         if (!validate()) return;
 
         setSubmitting(true);
-        setError(null);
 
         const data = new FormData();
         data.append("name", form.name.trim());
@@ -130,10 +128,11 @@ export function AddProjectDialog({ open, onOpenChange, onSuccess }: AddProjectDi
 
         try {
             const created = await createProject(data);
+            toast.success("Project created successfully");
             onSuccess?.(created);
             handleClose(false);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Something went wrong");
+            toast.error(err instanceof Error ? err.message : "Something went wrong");
         } finally {
             setSubmitting(false);
         }
@@ -151,13 +150,6 @@ export function AddProjectDialog({ open, onOpenChange, onSuccess }: AddProjectDi
 
                 <form onSubmit={handleSubmit} noValidate>
                     <div className="grid gap-5 py-4">
-                        {error && (
-                            <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm text-destructive">
-                                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                                <span>{error}</span>
-                            </div>
-                        )}
-
                         {/* Project Name */}
                         <div className="space-y-1.5">
                             <Label htmlFor="proj-name">

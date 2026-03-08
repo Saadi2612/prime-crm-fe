@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import {
     LayoutDashboard,
     Users,
@@ -109,9 +110,24 @@ export function AppSidebar() {
             return;
         }
 
-        document.startViewTransition(() => {
-            setTheme(nextTheme);
+        const originalTransition = document.documentElement.style.transition;
+        document.documentElement.style.transition = "none";
+
+        const transition = document.startViewTransition(() => {
+            document.documentElement.classList.remove("light", "dark");
+            document.documentElement.classList.add(nextTheme);
+            document.documentElement.style.colorScheme = nextTheme;
+
+            flushSync(() => {
+                setTheme(nextTheme);
+            });
         });
+
+        if (transition && transition.finished) {
+            transition.finished.finally(() => {
+                document.documentElement.style.transition = originalTransition;
+            });
+        }
     }
 
     const initials = user
@@ -201,29 +217,31 @@ export function AppSidebar() {
                 </SidebarGroup>
 
                 {/* Admin Section */}
-                <SidebarGroup>
-                    <SidebarGroupLabel className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
-                        Admin
-                    </SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {adminNavItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={pathname === item.href}
-                                        tooltip={item.title}
-                                    >
-                                        <Link href={item.href}>
-                                            <item.icon className="h-4 w-4" />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
+                {user?.role === "admin" && (
+                    <SidebarGroup>
+                        <SidebarGroupLabel className="text-xs font-semibold uppercase text-muted-foreground tracking-wider">
+                            Admin
+                        </SidebarGroupLabel>
+                        <SidebarGroupContent>
+                            <SidebarMenu>
+                                {adminNavItems.map((item) => (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={pathname === item.href}
+                                            tooltip={item.title}
+                                        >
+                                            <Link href={item.href}>
+                                                <item.icon className="h-4 w-4" />
+                                                <span>{item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                ))}
+                            </SidebarMenu>
+                        </SidebarGroupContent>
+                    </SidebarGroup>
+                )}
             </SidebarContent>
 
             {/* Footer */}
