@@ -208,6 +208,28 @@ export async function createLeadNote(leadId: string, body: string): Promise<Lead
   });
 }
 
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+
+export interface DashboardStats {
+  total_leads: number;
+  active_leads: number;
+  qualified_leads: number;
+  follow_ups_today: number;
+}
+
+export interface DashboardChartData {
+  date: string;
+  count: number;
+}
+
+export async function fetchDashboardStats(): Promise<DashboardStats> {
+  return apiFetch<DashboardStats>("/leads/stats/");
+}
+
+export async function fetchDashboardChart(days: number = 7): Promise<DashboardChartData[]> {
+  return apiFetch<DashboardChartData[]>(`/leads/chart/?days=${days}`);
+}
+
 // ── Projects ──────────────────────────────────────────────────────────────────
 
 export type ProjectType = "plot" | "apartment" | "house" | "portion" | "office" | "townhouse";

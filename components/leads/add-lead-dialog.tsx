@@ -238,74 +238,76 @@ export function AddLeadDialog({
                                 Lead Details
                             </legend>
 
-                            {/* Stage */}
-                            <div className="space-y-1.5">
-                                <Label>Stage</Label>
-                                <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a stage" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {stages.map((s) => (
-                                            <SelectItem key={s.id} value={s.id}>
-                                                <span className="capitalize">{s.name}</span>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Project */}
-                            <div className="space-y-1.5">
-                                <Label>Project</Label>
-                                <Select value={form.project} onValueChange={(v) => set("project", v)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a project" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {projects.length === 0 ? (
-                                            <div className="px-3 py-2 text-xs text-muted-foreground">No projects found</div>
-                                        ) : (
-                                            projects.map((p) => (
-                                                <SelectItem key={p.id} value={p.id}>
-                                                    {p.name}
+                            <div className="grid gap-4 md:grid-cols-2">
+                                {/* Stage */}
+                                <div className="space-y-1.5">
+                                    <Label>Stage</Label>
+                                    <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select a stage" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {stages.map((s) => (
+                                                <SelectItem key={s.id} value={s.id}>
+                                                    <span className="capitalize">{s.name}</span>
                                                 </SelectItem>
-                                            ))
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                            {/* Assigned To */}
-                            <div className="space-y-1.5">
-                                <Label>Assigned To</Label>
-                                <Select value={form.assigned_to} onValueChange={(v) => set("assigned_to", v)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select team member" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {teamMembers.length === 0 ? (
-                                            <div className="px-3 py-2 text-xs text-muted-foreground">No team members found</div>
-                                        ) : (
-                                            teamMembers.map((m) => (
-                                                <SelectItem key={m.id} value={m.id}>
-                                                    {m.full_name}
-                                                </SelectItem>
-                                            ))
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                {/* Project */}
+                                <div className="space-y-1.5">
+                                    <Label>Project</Label>
+                                    <Select value={form.project} onValueChange={(v) => set("project", v)}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select a project" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {projects.length === 0 ? (
+                                                <div className="px-3 py-2 text-xs text-muted-foreground">No projects found</div>
+                                            ) : (
+                                                projects.map((p) => (
+                                                    <SelectItem key={p.id} value={p.id}>
+                                                        {p.name}
+                                                    </SelectItem>
+                                                ))
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
 
-                            {/* Follow-Up Date */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="next_follow_up">Next Follow-Up</Label>
-                                <Input
-                                    id="next_follow_up"
-                                    type="date"
-                                    value={form.next_follow_up}
-                                    onChange={(e) => set("next_follow_up", e.target.value)}
-                                />
+                                {/* Assigned To */}
+                                <div className="space-y-1.5">
+                                    <Label>Assigned To</Label>
+                                    <Select value={form.assigned_to} onValueChange={(v) => set("assigned_to", v)}>
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Select team member" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {teamMembers.length === 0 ? (
+                                                <div className="px-3 py-2 text-xs text-muted-foreground">No team members found</div>
+                                            ) : (
+                                                teamMembers.map((m) => (
+                                                    <SelectItem key={m.id} value={m.id}>
+                                                        {m.full_name}
+                                                    </SelectItem>
+                                                ))
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                {/* Follow-Up Date */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="next_follow_up">Next Follow-Up</Label>
+                                    <Input
+                                        id="next_follow_up"
+                                        type="date"
+                                        value={form.next_follow_up}
+                                        onChange={(e) => set("next_follow_up", e.target.value)}
+                                    />
+                                </div>
                             </div>
                         </fieldset>
 

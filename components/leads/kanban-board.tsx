@@ -379,11 +379,11 @@ export function KanbanBoardView() {
                                                                     className="group rounded-lg border border-border bg-card p-3 shadow-xs cursor-grab active:cursor-grabbing hover:shadow-sm transition-shadow"
                                                                     onMouseDown={() => { dragRef.current = false; }}
                                                                     onMouseMove={() => { dragRef.current = true; }}
-                                                                // onMouseUp={() => {
-                                                                //     if (!dragRef.current) {
-                                                                //         router.push(`/leads/${lead.id}`);
-                                                                //     }
-                                                                // }}
+                                                                    onMouseUp={() => {
+                                                                        if (!dragRef.current) {
+                                                                            router.push(`/leads/${lead.id}`);
+                                                                        }
+                                                                    }}
                                                                 >
                                                                     <div className="flex items-center justify-between gap-2">
                                                                         <div className="flex items-center gap-2">
@@ -495,7 +495,7 @@ export function KanbanBoardView() {
                                                     )}
 
                                                     {/* Empty state add button */}
-                                                    {!leadsLoading && leads.length === 0 && (
+                                                    {!leadsLoading && leads.length === 0 && stage.name === 'new' && (
                                                         <button
                                                             onClick={() => openAddLead(stage.id)}
                                                             className="flex items-center gap-1.5 w-full rounded-lg px-2 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-background/60 transition-colors"
