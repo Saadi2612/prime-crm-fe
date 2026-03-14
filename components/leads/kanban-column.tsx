@@ -50,7 +50,7 @@ export function KanbanColumn({
     const columnBg = stageColumnBg[stage.name.toLowerCase()] ?? "bg-muted/30";
 
     return (
-        <div className="flex flex-col min-w-[240px] w-[240px] shrink-0">
+        <div className="flex flex-col min-w-[240px] w-[300px] shrink-0">
             {/* Column Header */}
             <div className="flex items-center justify-between mb-3 px-1">
                 <div className="flex items-center gap-2">

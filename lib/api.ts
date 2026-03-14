@@ -1,4 +1,4 @@
-import type { Lead, LeadNote, LeadsQueryParams, Stage } from "@/types/leads";
+import type { Lead, LeadNote, LeadsQueryParams, Stage, LeadTransfer } from "@/types/leads";
 import type { AuthSession } from "@/lib/auth";
 import { clearSession } from "@/lib/auth";
 
@@ -208,6 +208,25 @@ export async function createLeadNote(leadId: string, body: string): Promise<Lead
   });
 }
 
+export async function fetchLeadTransfers(leadId: string): Promise<LeadTransfer[]> {
+  return apiFetch<LeadTransfer[]>(`/leads/${leadId}/transfers/`);
+}
+
+export async function fetchUserTransfers(userId: string): Promise<LeadTransfer[]> {
+  return apiFetch<LeadTransfer[]>(`/leads/transfers/?user_id=${userId}`);
+}
+
+export async function transferLead(
+  leadId: string,
+  toUserId: string,
+  note?: string
+): Promise<Lead> {
+  return apiFetch<Lead>(`/leads/${leadId}/transfer/`, {
+    method: "POST",
+    body: JSON.stringify({ to_user: toUserId, note: note ?? "" }),
+  });
+}
+
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export interface DashboardStats {
@@ -215,6 +234,7 @@ export interface DashboardStats {
   active_leads: number;
   qualified_leads: number;
   follow_ups_today: number;
+  stage_counts?: Record<string, number>;
 }
 
 export interface DashboardChartData {
@@ -255,10 +275,32 @@ export async function fetchProjects(params?: { search?: string; type?: string })
   return apiFetch<Project[]>(`/projects/?${query.toString()}`);
 }
 
+export async function fetchProject(id: string): Promise<Project> {
+  return apiFetch<Project>(`/projects/${id}/`);
+}
+
 export async function createProject(data: FormData): Promise<Project> {
   const token = typeof window !== "undefined" ? localStorage.getItem("prime_access") : null;
   const res = await fetch(`${BASE_URL}/projects/`, {
     method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: data,
+  });
+  if (!res.ok) {
+    let message = STATUS_MESSAGES[res.status] ?? `Unexpected error (${res.status})`;
+    try {
+      const body = await res.json();
+      if (body?.detail && typeof body.detail === "string") message = body.detail;
+    } catch { /* ignore */ }
+    throw new Error(message);
+  }
+  return res.json();
+}
+
+export async function updateProject(id: string, data: FormData): Promise<Project> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("prime_access") : null;
+  const res = await fetch(`${BASE_URL}/projects/${id}/`, {
+    method: "PATCH",
     headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: data,
   });
@@ -284,10 +326,21 @@ export interface TeamMember {
   full_name: string;
   email: string;
   role: string;
+  phone_number?: string | null;
+  lead_stats?: {
+    total: number;
+    active: number;
+    won: number;
+    lost: number;
+  };
 }
 
 export async function fetchTeamMembers(): Promise<TeamMember[]> {
   return apiFetch<TeamMember[]>("/auth/users/");
+}
+
+export async function fetchTeamMember(id: string): Promise<TeamMember> {
+  return apiFetch<TeamMember>(`/auth/users/${id}/`);
 }
 
 // ── Invitations ───────────────────────────────────────────────────────────────

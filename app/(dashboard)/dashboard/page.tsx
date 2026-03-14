@@ -7,21 +7,33 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { Users, UserCheck, Target, CalendarDays } from "lucide-react";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
 
 const chartConfig = {
     leads: {
         label: "Leads",
-        color: "hsl(var(--primary))",
+        color: "var(--chart-1)",
     },
 } satisfies ChartConfig;
 
 export default function DashboardPage() {
+    const { user, isLoading: authLoading } = useAuth();
+    const router = useRouter();
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [chartData, setChartData] = useState<DashboardChartData[]>([]);
     const [days, setDays] = useState<"7" | "30">("30");
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!authLoading && user?.role === "agent") {
+            router.replace("/leads");
+        }
+    }, [user, authLoading, router]);
+
+    useEffect(() => {
+        if (authLoading || user?.role === "agent") return;
+        
         async function loadData() {
             setLoading(true);
             try {
@@ -38,7 +50,11 @@ export default function DashboardPage() {
             }
         }
         loadData();
-    }, [days]);
+    }, [days, authLoading, user]);
+
+    if (authLoading || user?.role === "agent") {
+        return null;
+    }
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">

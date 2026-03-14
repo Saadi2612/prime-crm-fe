@@ -31,7 +31,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowRightLeft, Loader2 } from "lucide-react";
+import { TransferLeadDialog } from "@/components/leads/transfer-lead-dialog";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -84,6 +85,7 @@ export function EditLeadDialog({ open, onOpenChange, lead, onSuccess }: EditLead
     const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [submitting, setSubmitting] = useState(false);
     const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+    const [transferOpen, setTransferOpen] = useState(false);
 
     // Reset form to fresh lead data whenever dialog opens
     useEffect(() => {
@@ -108,7 +110,7 @@ export function EditLeadDialog({ open, onOpenChange, lead, onSuccess }: EditLead
     function validate(): boolean {
         const errors: Partial<Record<keyof FormState, string>> = {};
         if (!form.full_name.trim()) errors.full_name = "Full name is required";
-        if (!form.email.trim()) errors.email = "Email is required";
+        // if (!form.email.trim()) errors.email = "Email is required";
         if (form.min_budget && form.max_budget) {
             if (Number(form.min_budget) > Number(form.max_budget))
                 errors.max_budget = "Max budget must be ≥ min budget";
@@ -152,211 +154,235 @@ export function EditLeadDialog({ open, onOpenChange, lead, onSuccess }: EditLead
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="text-lg font-semibold">Edit Lead</DialogTitle>
-                    <DialogDescription className="text-sm text-muted-foreground">
-                        Update the details for <span className="font-medium text-foreground">{lead.full_name}</span>.
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-semibold">Edit Lead</DialogTitle>
+                        <DialogDescription className="text-sm text-muted-foreground">
+                            Update the details for <span className="font-medium text-foreground">{lead.full_name}</span>.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <form onSubmit={handleSubmit} noValidate>
-                    <div className="grid gap-5 py-4">
-                        {/* ── Contact Info ── */}
-                        <fieldset className="space-y-4">
-                            <legend className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                                Contact Info
-                            </legend>
+                    <form onSubmit={handleSubmit} noValidate>
+                        <div className="grid gap-5 py-4">
+                            {/* ── Contact Info ── */}
+                            <fieldset className="space-y-4">
+                                <legend className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                                    Contact Info
+                                </legend>
 
-                            <div className="space-y-1.5">
-                                <Label htmlFor="edit_full_name">
-                                    Full Name <span className="text-destructive">*</span>
-                                </Label>
-                                <Input
-                                    id="edit_full_name"
-                                    placeholder="e.g. John Smith"
-                                    value={form.full_name}
-                                    onChange={(e) => set("full_name", e.target.value)}
-                                    className={fieldErrors.full_name ? "border-destructive" : ""}
-                                />
-                                {fieldErrors.full_name && (
-                                    <p className="text-xs text-destructive">{fieldErrors.full_name}</p>
-                                )}
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="edit_email">
-                                    Email <span className="text-destructive">*</span>
-                                </Label>
-                                <Input
-                                    id="edit_email"
-                                    type="email"
-                                    placeholder="example@gmail.com"
-                                    value={form.email}
-                                    onChange={(e) => set("email", e.target.value)}
-                                    className={fieldErrors.email ? "border-destructive" : ""}
-                                />
-                                {fieldErrors.email && (
-                                    <p className="text-xs text-destructive">{fieldErrors.email}</p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
                                 <div className="space-y-1.5">
-                                    <Label htmlFor="edit_phone">Phone</Label>
+                                    <Label htmlFor="edit_full_name">
+                                        Full Name <span className="text-destructive">*</span>
+                                    </Label>
                                     <Input
-                                        id="edit_phone"
-                                        type="tel"
-                                        placeholder="+92 300 0000000"
-                                        value={form.phone}
-                                        onChange={(e) => set("phone", e.target.value)}
+                                        id="edit_full_name"
+                                        placeholder="e.g. John Smith"
+                                        value={form.full_name}
+                                        onChange={(e) => set("full_name", e.target.value)}
+                                        className={fieldErrors.full_name ? "border-destructive" : ""}
                                     />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="edit_job_title">Job Title</Label>
-                                    <Input
-                                        id="edit_job_title"
-                                        placeholder="e.g. Manager"
-                                        value={form.job_title}
-                                        onChange={(e) => set("job_title", e.target.value)}
-                                    />
-                                </div>
-                            </div>
-                        </fieldset>
-
-                        {/* ── Lead Details ── */}
-                        <fieldset className="space-y-4">
-                            <legend className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                                Lead Details
-                            </legend>
-
-                            <div className="space-y-1.5">
-                                <Label>Stage</Label>
-                                <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a stage" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {stages.map((s) => (
-                                            <SelectItem key={s.id} value={s.id}>
-                                                <span className="capitalize">{s.name}</span>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label>Project</Label>
-                                <Select value={form.project} onValueChange={(v) => set("project", v)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a project" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="__none__">— No project —</SelectItem>
-                                        {projects.map((p) => (
-                                            <SelectItem key={p.id} value={p.id}>
-                                                {p.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label>Assigned To</Label>
-                                <Select value={form.assigned_to} onValueChange={(v) => set("assigned_to", v)}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select team member" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="__none__">— Unassigned —</SelectItem>
-                                        {teamMembers.map((m) => (
-                                            <SelectItem key={m.id} value={m.id}>
-                                                {m.full_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <Label htmlFor="edit_next_follow_up">Next Follow-Up</Label>
-                                <Input
-                                    id="edit_next_follow_up"
-                                    type="date"
-                                    value={form.next_follow_up}
-                                    onChange={(e) => set("next_follow_up", e.target.value)}
-                                />
-                            </div>
-                        </fieldset>
-
-                        {/* ── Budget ── */}
-                        <fieldset className="space-y-4">
-                            <legend className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                                Budget
-                            </legend>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="edit_min_budget">Min Budget</Label>
-                                    <Input
-                                        id="edit_min_budget"
-                                        type="number"
-                                        min={0}
-                                        placeholder="0"
-                                        value={form.min_budget}
-                                        onChange={(e) => set("min_budget", e.target.value)}
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="edit_max_budget">Max Budget</Label>
-                                    <Input
-                                        id="edit_max_budget"
-                                        type="number"
-                                        min={0}
-                                        placeholder="0"
-                                        value={form.max_budget}
-                                        onChange={(e) => set("max_budget", e.target.value)}
-                                        className={fieldErrors.max_budget ? "border-destructive" : ""}
-                                    />
-                                    {fieldErrors.max_budget && (
-                                        <p className="text-xs text-destructive">{fieldErrors.max_budget}</p>
+                                    {fieldErrors.full_name && (
+                                        <p className="text-xs text-destructive">{fieldErrors.full_name}</p>
                                     )}
                                 </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="edit_email">
+                                        Email <span className="text-destructive">*</span>
+                                    </Label>
+                                    <Input
+                                        id="edit_email"
+                                        type="email"
+                                        placeholder="example@gmail.com"
+                                        value={form.email}
+                                        onChange={(e) => set("email", e.target.value)}
+                                        className={fieldErrors.email ? "border-destructive" : ""}
+                                    />
+                                    {fieldErrors.email && (
+                                        <p className="text-xs text-destructive">{fieldErrors.email}</p>
+                                    )}
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="edit_phone">Phone</Label>
+                                        <Input
+                                            id="edit_phone"
+                                            type="tel"
+                                            placeholder="+92 300 0000000"
+                                            value={form.phone}
+                                            onChange={(e) => set("phone", e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="edit_job_title">Job Title</Label>
+                                        <Input
+                                            id="edit_job_title"
+                                            placeholder="e.g. Manager"
+                                            value={form.job_title}
+                                            onChange={(e) => set("job_title", e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            {/* ── Lead Details ── */}
+                            <fieldset className="space-y-4">
+                                <legend className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                                    Lead Details
+                                </legend>
+
+                                <div className="space-y-1.5">
+                                    <Label>Stage</Label>
+                                    <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a stage" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {stages.map((s) => (
+                                                <SelectItem key={s.id} value={s.id}>
+                                                    <span className="capitalize">{s.name}</span>
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label>Project</Label>
+                                    <Select value={form.project} onValueChange={(v) => set("project", v)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a project" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="__none__">— No project —</SelectItem>
+                                            {projects.map((p) => (
+                                                <SelectItem key={p.id} value={p.id}>
+                                                    {p.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label>Assigned To</Label>
+                                    <Select value={form.assigned_to} onValueChange={(v) => set("assigned_to", v)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select team member" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="__none__">— Unassigned —</SelectItem>
+                                            {teamMembers.map((m) => (
+                                                <SelectItem key={m.id} value={m.id}>
+                                                    {m.full_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="edit_next_follow_up">Next Follow-Up</Label>
+                                    <Input
+                                        id="edit_next_follow_up"
+                                        type="date"
+                                        value={form.next_follow_up}
+                                        onChange={(e) => set("next_follow_up", e.target.value)}
+                                    />
+                                </div>
+                            </fieldset>
+
+                            {/* ── Budget ── */}
+                            <fieldset className="space-y-4">
+                                <legend className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+                                    Budget
+                                </legend>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="edit_min_budget">Min Budget</Label>
+                                        <Input
+                                            id="edit_min_budget"
+                                            type="number"
+                                            min={0}
+                                            placeholder="0"
+                                            value={form.min_budget}
+                                            onChange={(e) => set("min_budget", e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="edit_max_budget">Max Budget</Label>
+                                        <Input
+                                            id="edit_max_budget"
+                                            type="number"
+                                            min={0}
+                                            placeholder="0"
+                                            value={form.max_budget}
+                                            onChange={(e) => set("max_budget", e.target.value)}
+                                            className={fieldErrors.max_budget ? "border-destructive" : ""}
+                                        />
+                                        {fieldErrors.max_budget && (
+                                            <p className="text-xs text-destructive">{fieldErrors.max_budget}</p>
+                                        )}
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            {/* ── Notes ── */}
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit_notes">Notes</Label>
+                                <Textarea
+                                    id="edit_notes"
+                                    placeholder="Add any notes about this lead..."
+                                    className="resize-none min-h-[90px]"
+                                    value={form.notes}
+                                    onChange={(e) => set("notes", e.target.value)}
+                                />
                             </div>
-                        </fieldset>
-
-                        {/* ── Notes ── */}
-                        <div className="space-y-1.5">
-                            <Label htmlFor="edit_notes">Notes</Label>
-                            <Textarea
-                                id="edit_notes"
-                                placeholder="Add any notes about this lead..."
-                                className="resize-none min-h-[90px]"
-                                value={form.notes}
-                                onChange={(e) => set("notes", e.target.value)}
-                            />
                         </div>
-                    </div>
 
-                    <DialogFooter className="gap-2 pt-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => onOpenChange(false)}
-                            disabled={submitting}
-                        >
-                            Cancel
-                        </Button>
-                        <Button type="submit" disabled={submitting} className="gap-2">
-                            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                            {submitting ? "Saving…" : "Save Changes"}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                        <DialogFooter className="gap-2 pt-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => onOpenChange(false)}
+                                disabled={submitting}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="gap-2"
+                                onClick={() => setTransferOpen(true)}
+                                disabled={submitting}
+                            >
+                                <ArrowRightLeft className="h-4 w-4" />
+                                Transfer
+                            </Button>
+                            <Button type="submit" disabled={submitting} className="gap-2">
+                                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                                {submitting ? "Saving…" : "Save Changes"}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Transfer dialog — mounted outside the edit dialog to avoid nesting issues */}
+            <TransferLeadDialog
+                open={transferOpen}
+                onOpenChange={setTransferOpen}
+                lead={lead}
+                onSuccess={(updated) => {
+                    onSuccess?.(updated);
+                    setTransferOpen(false);
+                    onOpenChange(false);
+                }}
+            />
+        </>
     );
 }
 
