@@ -109,7 +109,7 @@ export function AddLeadDialog({
     function validate(): boolean {
         const errors: Partial<Record<keyof FormState, string>> = {};
         if (!form.full_name.trim()) errors.full_name = "Full name is required";
-        if (!form.email.trim()) errors.email = "Email is required";
+        // if (!form.email.trim()) errors.email = "Email is required";
         if (form.min_budget && form.max_budget) {
             if (Number(form.min_budget) > Number(form.max_budget)) {
                 errors.max_budget = "Max budget must be ≥ min budget";

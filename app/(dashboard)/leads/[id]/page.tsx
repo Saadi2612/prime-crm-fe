@@ -4,9 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
     ArrowLeft,
+    ArrowRightLeft,
     Building2,
     CalendarDays,
     Check,
+    ChevronRight,
     Clock,
     DollarSign,
     MessageSquarePlus,
@@ -17,6 +19,7 @@ import {
     Tag,
     Trash2,
     User2,
+    Users,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -39,6 +42,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { EditLeadDialog } from "@/components/leads/edit-lead-dialog";
+import { TransferLeadDialog } from "@/components/leads/transfer-lead-dialog";
 import { formatBudget } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 
@@ -74,6 +78,7 @@ export default function LeadDetailPage() {
     const [changingStage, setChangingStage] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
+    const [transferOpen, setTransferOpen] = useState(false);
 
     // Notes state
     const [notes, setNotes] = useState<LeadNote[]>([]);
@@ -207,9 +212,16 @@ export default function LeadDetailPage() {
 
     return (
         <div className="max-w-5xl space-y-4">
+            {/* ── Dialogs ───────────────────────────────────────────────── */}
             <EditLeadDialog
                 open={editOpen}
                 onOpenChange={setEditOpen}
+                lead={lead}
+                onSuccess={(updated) => setLead(updated)}
+            />
+            <TransferLeadDialog
+                open={transferOpen}
+                onOpenChange={setTransferOpen}
                 lead={lead}
                 onSuccess={(updated) => setLead(updated)}
             />
@@ -236,6 +248,18 @@ export default function LeadDetailPage() {
                         <Pencil className="h-4 w-4" />
                         Edit
                     </Button>
+
+                    {(user?.role === "admin" || user?.role === "manager") && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => setTransferOpen(true)}
+                        >
+                            <ArrowRightLeft className="h-4 w-4" />
+                            Transfer
+                        </Button>
+                    )}
 
                     {user?.role === "admin" && (
                         <AlertDialog>
@@ -418,6 +442,87 @@ export default function LeadDetailPage() {
                     </div>
                 </div>
             </div>
+
+            {/* ── Transfer History ───────────────────────────────────────── */}
+            {(() => {
+                const history = lead.transfer_history ?? [];
+                return (
+                    <div className="rounded-2xl border border-border bg-card p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Users className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Transfer History
+                            </p>
+                            {history.length > 0 && (
+                                <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                                    {history.length} transfer{history.length !== 1 ? "s" : ""}
+                                </span>
+                            )}
+                        </div>
+
+                        {history.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic">
+                                No transfers yet.
+                            </p>
+                        ) : (
+                            <div className="space-y-3">
+                                {/* Breadcrumb chain — all unique agents in order */}
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                    {/* Initial state: the very first from_user (if any) */}
+                                    {history[0].from_user ? (
+                                        <span className="text-sm text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                                            {history[0].from_user.full_name}
+                                        </span>
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground italic px-1">
+                                            Unassigned
+                                        </span>
+                                    )}
+                                    {history.map((t) => (
+                                        <span key={t.id} className="flex items-center gap-1.5">
+                                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                                            <span className="text-sm font-medium text-foreground bg-primary/5 border border-primary/15 px-3 py-1 rounded-full">
+                                                {t.to_user?.full_name ?? "Unknown"}
+                                            </span>
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* Detailed timeline */}
+                                <div className="space-y-2 mt-3 border-t border-border pt-3">
+                                    {history.map((t) => (
+                                        <div key={t.id} className="flex items-start gap-2 text-xs text-muted-foreground">
+                                            <span className="shrink-0 mt-0.5 h-1.5 w-1.5 rounded-full bg-primary/50 mt-1.5" />
+                                            <div>
+                                                <span className="font-medium text-foreground">
+                                                    {t.from_user?.full_name ?? "Unassigned"}
+                                                </span>
+                                                {" → "}
+                                                <span className="font-medium text-foreground">
+                                                    {t.to_user?.full_name ?? "Unknown"}
+                                                </span>
+                                                {t.transferred_by && (
+                                                    <span className="ml-1 text-muted-foreground">
+                                                        by {t.transferred_by.full_name}
+                                                    </span>
+                                                )}
+                                                {t.note && (
+                                                    <span className="ml-1 italic">
+                                                        — &quot;{t.note}&quot;
+                                                    </span>
+                                                )}
+                                                <span className="ml-2 text-muted-foreground/60">
+                                                    {formatDistanceToNow(new Date(t.created_at), { addSuffix: true })}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* ── Notes ─────────────────────────────────────────────────── */}
             <div className="rounded-2xl border border-border bg-card p-6">

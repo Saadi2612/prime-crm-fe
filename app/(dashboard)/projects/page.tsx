@@ -12,10 +12,15 @@ import {
     Ruler,
     Search,
     Tag,
+    MoreVertical,
+    Edit,
+    Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 
-import { fetchProjects, type Project, type ProjectType } from "@/lib/api";
+import { fetchProjects, deleteProject, type Project, type ProjectType } from "@/lib/api";
 import { AddProjectDialog } from "@/components/projects/add-project-dialog";
+import { EditProjectDialog } from "@/components/projects/edit-project-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +31,21 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    AlertDialog,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -63,12 +83,49 @@ function cardGradient(id: string) {
 
 // ── Project Card ────────────────────────────────────────────────────────────
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({
+    project,
+    onEdit,
+    onDelete,
+}: {
+    project: Project;
+    onEdit: (project: Project) => void;
+    onDelete: (project: Project) => void;
+}) {
     const gradient = cardGradient(project.id);
     const typeLabel = TYPE_LABELS[project.type] ?? project.type;
 
     return (
-        <div className="group rounded-xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 cursor-pointer">
+        <div className="group rounded-xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 relative">
+            {/* Action Menu */}
+            <div className="absolute top-3 right-3 z-10">
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="secondary"
+                            size="icon"
+                            className="h-7 w-7 rounded-md bg-background/80 backdrop-blur-sm hover:bg-background text-foreground shadow-sm"
+                        >
+                            <MoreVertical className="h-4 w-4" />
+                            <span className="sr-only">Open menu</span>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                        <DropdownMenuItem onClick={() => onEdit(project)}>
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                            onClick={() => onDelete(project)}
+                        >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
             {/* Image / placeholder */}
             <div className="relative h-44 w-full overflow-hidden">
                 {project.image ? (
@@ -80,14 +137,14 @@ function ProjectCard({ project }: { project: Project }) {
                     />
                 ) : (
                     <div
-                        className={`h-full w-full bg-gradient-to-br ${gradient} flex items-center justify-center`}
+                        className={`h-full w-full bg-linear-to-br ${gradient} flex items-center justify-center`}
                     >
                         <Building2 className="h-12 w-12 text-white/30" />
                     </div>
                 )}
 
                 {/* Type badge */}
-                <span className="absolute top-3 right-3 rounded-full bg-background/90 backdrop-blur-sm text-xs font-semibold px-2.5 py-0.5 text-foreground border border-border/40 capitalize">
+                <span className="absolute top-3 left-3 rounded-full bg-background/90 backdrop-blur-sm text-xs font-semibold px-2.5 py-0.5 text-foreground border border-border/40 capitalize">
                     {typeLabel}
                 </span>
             </div>
@@ -154,6 +211,13 @@ export default function ProjectsPage() {
     const [typeFilter, setTypeFilter] = useState("all");
     const [dialogOpen, setDialogOpen] = useState(false);
 
+    const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
     const load = useCallback(() => {
         setLoading(true);
         setError(null);
@@ -175,6 +239,36 @@ export default function ProjectsPage() {
         setProjects((prev) => [created, ...prev]);
     }
 
+    function handleProjectUpdated(updated: Project) {
+        setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    }
+
+    function handleEditClick(project: Project) {
+        setProjectToEdit(project);
+        setEditDialogOpen(true);
+    }
+
+    function handleDeleteClick(project: Project) {
+        setProjectToDelete(project);
+        setDeleteDialogOpen(true);
+    }
+
+    async function confirmDelete() {
+        if (!projectToDelete) return;
+        setDeleting(true);
+        try {
+            await deleteProject(projectToDelete.id);
+            setProjects((prev) => prev.filter((p) => p.id !== projectToDelete.id));
+            toast.success("Project deleted successfully");
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete project");
+        } finally {
+            setDeleting(false);
+            setDeleteDialogOpen(false);
+            setProjectToDelete(null);
+        }
+    }
+
     return (
         <>
             <AddProjectDialog
@@ -182,6 +276,34 @@ export default function ProjectsPage() {
                 onOpenChange={setDialogOpen}
                 onSuccess={handleProjectCreated}
             />
+
+            <EditProjectDialog
+                open={editDialogOpen}
+                onOpenChange={setEditDialogOpen}
+                project={projectToEdit}
+                onSuccess={handleProjectUpdated}
+            />
+
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete &quot;{projectToDelete?.name}&quot;? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDelete}
+                            disabled={deleting}
+                        >
+                            {deleting ? "Deleting..." : "Delete"}
+                        </Button>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             <div className="flex flex-col h-full">
                 {/* ── Page Header ──────────────────────────────────────────────── */}
@@ -294,7 +416,12 @@ export default function ProjectsPage() {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
                         {projects.map((project) => (
-                            <ProjectCard key={project.id} project={project} />
+                            <ProjectCard
+                                key={project.id}
+                                project={project}
+                                onEdit={handleEditClick}
+                                onDelete={handleDeleteClick}
+                            />
                         ))}
                     </div>
                 )}

@@ -9,6 +9,7 @@ import type { Lead, Stage } from "@/types/leads";
 import { fetchLeads, fetchStages, updateLeadStage } from "@/lib/api";
 import { toast } from "sonner";
 import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
+import { LeadsStatsCards } from "@/components/leads/leads-stats-cards";
 import { LeadCard } from "@/components/leads/lead-card";
 
 import {
@@ -199,7 +200,7 @@ export function KanbanBoardView() {
                 onSuccess={handleLeadCreated}
             />
 
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col w-full h-full min-w-0">
                 {/* ── Page Header ─────────────────────────────────────────────────── */}
                 <div className="flex items-start justify-between mb-6">
                     <div>
@@ -217,6 +218,9 @@ export function KanbanBoardView() {
                         Add Lead
                     </Button>
                 </div>
+
+                {/* ── Stats Cards ─────────────────────────────────────────────────── */}
+                <LeadsStatsCards />
 
                 {/* ── Toolbar ─────────────────────────────────────────────────────── */}
                 <div className="flex items-center gap-3 mb-6">
@@ -303,7 +307,7 @@ export function KanbanBoardView() {
                     stagesLoading ? (
                         <div className="flex gap-4 overflow-x-auto pb-4">
                             {Array.from({ length: 5 }).map((_, i) => (
-                                <div key={i} className="min-w-[240px] w-[240px] shrink-0">
+                                <div key={i} className="min-w-[240px] w-[360px] shrink-0">
                                     <Skeleton className="h-7 w-28 mb-3" />
                                     <Skeleton className="h-[380px] w-full rounded-xl" />
                                 </div>
@@ -327,7 +331,7 @@ export function KanbanBoardView() {
                                             <KanbanColumn
                                                 key={stage.id}
                                                 value={stage.id}
-                                                className={`flex flex-col min-w-[240px] w-[280px] shrink-0 rounded-xl border border-border/40 p-2 gap-2 ${colBg}`}
+                                                className={`flex flex-col min-w-[240px] w-[360px] shrink-0 rounded-xl border border-border/40 p-2 gap-2 ${colBg}`}
                                             >
                                                 {/* Column header */}
                                                 <div className="flex items-center justify-between px-1 py-0.5">

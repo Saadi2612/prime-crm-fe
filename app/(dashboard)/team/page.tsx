@@ -51,7 +51,8 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
-import { Mail, Plus, Shield, UserCircle2, Loader2, AlertTriangle, RefreshCw, Clock, Trash2, Send } from "lucide-react";
+import { Mail, Plus, Shield, UserCircle2, Loader2, AlertTriangle, RefreshCw, Clock, Trash2, Send, ChevronRight } from "lucide-react";
+import Link from "next/link";
 
 // Avatar colours per name hash
 const AVATAR_COLORS = [
@@ -269,79 +270,119 @@ export default function TeamPage() {
                 </TabsList>
 
                 <TabsContent value="active" className="mt-0">
-                    <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
-                        <div className="divide-y divide-border">
-                            {isLoading ? (
-                                Array.from({ length: 4 }).map((_, i) => (
-                                    <div key={i} className="flex items-center gap-4 p-4">
-                                        <Skeleton className="h-10 w-10 rounded-full" />
-                                        <div className="flex-1 space-y-2">
-                                            <Skeleton className="h-4 w-48" />
-                                            <Skeleton className="h-3 w-32" />
+                    {isLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {Array.from({ length: 4 }).map((_, i) => (
+                                <div key={i} className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <Skeleton className="h-14 w-14 rounded-xl" />
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-5 w-32" />
+                                            <Skeleton className="h-4 w-20" />
                                         </div>
-                                        <Skeleton className="h-6 w-20 rounded-full" />
                                     </div>
-                                ))
-                            ) : members.length === 0 ? (
-                                <div className="py-16 text-center flex flex-col items-center">
-                                    <UserCircle2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                                    <p className="text-foreground font-medium">No team members found</p>
-                                    <p className="text-muted-foreground text-sm mt-1">
-                                        {canInvite ? "Invite your first team member to get started." : "You are the only member."}
-                                    </p>
-                                    {canInvite && (
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="mt-6 gap-2"
-                                            onClick={() => setIsDialogOpen(true)}
-                                        >
-                                            <Plus className="h-4 w-4" />
-                                            Invite User
-                                        </Button>
-                                    )}
-                                </div>
-                            ) : (
-                                members.map((member) => (
-                                    <div
-                                        key={member.id}
-                                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 hover:bg-muted/30 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-4 min-w-0">
-                                            <Avatar className="h-10 w-10 shrink-0 border border-border/50">
-                                                <AvatarFallback className={`text-sm font-semibold ${avatarColor(member.full_name)}`}>
-                                                    {initials(member.full_name || member.email)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="min-w-0">
-                                                <div className="text-sm font-medium text-foreground truncate">
-                                                    {member.full_name || "Unnamed User"}
-                                                    {user?.email === member.email && (
-                                                        <span className="ml-2 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                                                            You
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                                                    <Mail className="h-3 w-3 shrink-0" />
-                                                    <span className="truncate">{member.email}</span>
-                                                </div>
-                                            </div>
+                                    <Skeleton className="h-4 w-48 mb-6" />
+                                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border/50">
+                                        <div className="space-y-1 text-center">
+                                            <Skeleton className="h-6 w-8 mx-auto" />
+                                            <Skeleton className="h-3 w-12 mx-auto" />
                                         </div>
-
-                                        <div className="flex items-center gap-3 shrink-0 ml-14 sm:ml-0">
-                                            <div className="flex items-center gap-1.5 text-xs font-medium border border-border/60 bg-muted/40 rounded-full px-2.5 py-1 capitalize">
-                                                {member.role === 'admin' && <Shield className="h-3 w-3 text-red-500" />}
-                                                {member.role === 'manager' && <Shield className="h-3 w-3 text-blue-500" />}
-                                                {member.role === 'agent' && <UserCircle2 className="h-3 w-3 text-green-500" />}
+                                        <div className="space-y-1 text-center">
+                                            <Skeleton className="h-6 w-8 mx-auto" />
+                                            <Skeleton className="h-3 w-12 mx-auto" />
+                                        </div>
+                                        <div className="space-y-1 text-center">
+                                            <Skeleton className="h-6 w-8 mx-auto" />
+                                            <Skeleton className="h-3 w-12 mx-auto" />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : members.length === 0 ? (
+                        <div className="rounded-xl border border-border bg-card py-16 text-center flex flex-col items-center shadow-sm">
+                            <UserCircle2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                            <p className="text-foreground font-medium">No team members found</p>
+                            <p className="text-muted-foreground text-sm mt-1">
+                                {canInvite ? "Invite your first team member to get started." : "You are the only member."}
+                            </p>
+                            {canInvite && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="mt-6 gap-2"
+                                    onClick={() => setIsDialogOpen(true)}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Invite User
+                                </Button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {members.map((member) => (
+                                <Link
+                                    key={member.id}
+                                    href={`/team/${member.id}`}
+                                    className="group rounded-xl border border-border bg-card p-6 shadow-sm hover:border-foreground/20 hover:shadow-md transition-all flex flex-col"
+                                >
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <div className={`h-14 w-14 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 ${avatarColor(member.full_name)}`}>
+                                            {initials(member.full_name || member.email)}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-base font-semibold text-foreground truncate">
+                                                {member.full_name || "Unnamed User"}
+                                                {user?.email === member.email && (
+                                                    <span className="ml-2 text-[10px] uppercase tracking-wider font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                                        You
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-sm text-muted-foreground mt-0.5 capitalize flex items-center gap-1.5">
+                                                {member.role === 'admin' && <Shield className="h-3.5 w-3.5" />}
+                                                {member.role === 'manager' && <Shield className="h-3.5 w-3.5" />}
+                                                {member.role === 'agent' && <UserCircle2 className="h-3.5 w-3.5" />}
                                                 {member.role}
                                             </div>
                                         </div>
                                     </div>
-                                ))
-                            )}
+
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+                                        <Mail className="h-4 w-4 shrink-0" />
+                                        <span className="truncate">{member.email}</span>
+                                    </div>
+
+                                    <div className="mt-auto grid grid-cols-3 gap-2 pt-4 border-t border-border/50">
+                                        <div className="text-center">
+                                            <div className="text-xl font-bold text-foreground">
+                                                {member.lead_stats?.total ?? 0}
+                                            </div>
+                                            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">
+                                                Total
+                                            </div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-xl font-bold text-foreground">
+                                                {member.lead_stats?.active ?? 0}
+                                            </div>
+                                            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">
+                                                Active
+                                            </div>
+                                        </div>
+                                        <div className="text-center">
+                                            <div className="text-xl font-bold text-foreground">
+                                                {member.lead_stats?.won ?? 0}
+                                            </div>
+                                            <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">
+                                                Won
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
+                            ))}
                         </div>
-                    </div>
+                    )}
                 </TabsContent>
 
                 {canInvite && (

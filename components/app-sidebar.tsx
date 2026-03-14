@@ -17,6 +17,7 @@ import {
     LogOut,
     Moon,
     Sun,
+    type LucideIcon,
 } from "lucide-react";
 
 import {
@@ -42,7 +43,18 @@ import {
 import { ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-const mainNavItems = [
+type NavItem = {
+    title: string;
+    href: string;
+    icon: LucideIcon;
+    children?: {
+        title: string;
+        href: string;
+        icon: LucideIcon;
+    }[];
+};
+
+const mainNavItems: NavItem[] = [
     {
         title: "Dashboard",
         href: "/dashboard",
@@ -52,9 +64,9 @@ const mainNavItems = [
         title: "Leads",
         href: "/leads",
         icon: Users,
-        children: [
-            { title: "All Leads", href: "/leads", icon: ListFilter },
-        ],
+        // children: [
+        //     { title: "All Leads", href: "/leads", icon: ListFilter },
+        // ],
     },
     {
         title: "Projects",
@@ -68,7 +80,7 @@ const mainNavItems = [
     },
 ];
 
-const adminNavItems = [
+const adminNavItems: NavItem[] = [
     {
         title: "All Leads",
         href: "/leads",
@@ -160,8 +172,9 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {mainNavItems.map((item) =>
-                                item.children ? (
+                            {mainNavItems.map((item) => {
+                                if (item.title === "Dashboard" && user?.role === "agent") return null;
+                                return item.children ? (
                                     <Collapsible
                                         key={item.title}
                                         defaultOpen={pathname.startsWith(item.href)}
@@ -210,8 +223,8 @@ export function AppSidebar() {
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
-                                )
-                            )}
+                                );
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

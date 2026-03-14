@@ -7,6 +7,23 @@ export interface Stage {
   updated_at: string;
 }
 
+/** Compact user object embedded in transfer records */
+export interface UserRef {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+export interface LeadTransfer {
+  id: string;
+  lead: string;
+  from_user: UserRef | null;
+  to_user: UserRef | null;
+  transferred_by: UserRef | null;
+  note: string;
+  created_at: string;
+}
+
 export interface LeadNote {
   id: string;
   body: string;
@@ -50,7 +67,8 @@ export interface Lead {
   stage_name?: string;
   /** The API returns a nested ProjectRef object, or null */
   project?: ProjectRef | null;
-  assigned_to?: string | null;
+  assigned_to?: { id: string; full_name: string; email: string } | string | null;
+  transfer_history?: LeadTransfer[];
   form?: string;
   property_interest?: string;
   created_at: string;
