@@ -20,8 +20,9 @@ import {
     Trash2,
     User2,
     Users,
+    CalendarClock,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
 import type { Lead, LeadNote, ProjectRef, StageRef } from "@/types/leads";
 import type { Stage } from "@/types/leads";
@@ -84,6 +85,7 @@ export default function LeadDetailPage() {
     const [notes, setNotes] = useState<LeadNote[]>([]);
     const [notesLoading, setNotesLoading] = useState(true);
     const [newNoteBody, setNewNoteBody] = useState("");
+    const [newNoteFollowUp, setNewNoteFollowUp] = useState("");
     const [addingNote, setAddingNote] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -128,9 +130,11 @@ export default function LeadDetailPage() {
         if (!lead || !newNoteBody.trim()) return;
         setAddingNote(true);
         try {
-            const created = await createLeadNote(lead.id, newNoteBody.trim());
+            const payloadFollowUp = newNoteFollowUp ? new Date(newNoteFollowUp).toISOString() : null;
+            const created = await createLeadNote(lead.id, newNoteBody.trim(), payloadFollowUp);
             setNotes((prev) => [created, ...prev]);
             setNewNoteBody("");
+            setNewNoteFollowUp("");
             toast.success("Note added successfully");
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "Failed to save note");
@@ -373,15 +377,15 @@ export default function LeadDetailPage() {
                                 <span>{lead.job_title}</span>
                             </div>
                         ) : null}
-                        {lead.next_follow_up ? (
+                        {notes[0]?.next_follow_up ? (
                             <div className="flex items-center gap-3 text-sm text-foreground">
-                                <span className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                                    <CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+                                    <CalendarClock className="h-3.5 w-3.5 text-amber-500" />
                                 </span>
-                                <span>Follow-up: {new Date(lead.next_follow_up).toLocaleDateString()}</span>
+                                <span>Next follow-up: <span className="font-medium">{format(new Date(notes[0].next_follow_up), "dd/MM/yyyy hh:mm a")}</span></span>
                             </div>
                         ) : null}
-                        {!lead.phone && !lead.job_title && !lead.next_follow_up && (
+                        {!lead.phone && !lead.job_title && !notes[0]?.next_follow_up && (
                             <p className="text-sm text-muted-foreground italic">No contact details</p>
                         )}
                     </div>
@@ -492,7 +496,7 @@ export default function LeadDetailPage() {
                                 <div className="space-y-2 mt-3 border-t border-border pt-3">
                                     {history.map((t) => (
                                         <div key={t.id} className="flex items-start gap-2 text-xs text-muted-foreground">
-                                            <span className="shrink-0 mt-0.5 h-1.5 w-1.5 rounded-full bg-primary/50 mt-1.5" />
+                                            <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-primary/50 mt-1.5" />
                                             <div>
                                                 <span className="font-medium text-foreground">
                                                     {t.from_user?.full_name ?? "Unassigned"}
@@ -551,21 +555,29 @@ export default function LeadDetailPage() {
                         {notes.map((note) => (
                             <div
                                 key={note.id}
-                                className="rounded-xl border border-border bg-muted/30 px-4 py-3 space-y-1"
+                                className="rounded-xl border border-border bg-muted/30 px-4 py-3 space-y-2"
                             >
                                 <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
                                     {note.body}
                                 </p>
-                                <p className="text-[11px] text-muted-foreground">
-                                    {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
-                                </p>
+                                <div className="flex items-center justify-between flex-wrap gap-2">
+                                    <p className="text-[11px] text-muted-foreground">
+                                        {formatDistanceToNow(new Date(note.created_at), { addSuffix: true })}
+                                    </p>
+                                    {note.next_follow_up && (
+                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                            <CalendarClock className="h-3 w-3" />
+                                            Follow-up: {format(new Date(note.next_follow_up), "dd/MM/yyyy hh:mm a")}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                         ))}
                     </div>
                 )}
 
                 {/* Add new note */}
-                <div className="border-t border-border pt-4 space-y-2">
+                <div className="border-t border-border pt-4 space-y-3">
                     <Textarea
                         ref={textareaRef}
                         value={newNoteBody}
@@ -580,6 +592,35 @@ export default function LeadDetailPage() {
                             }
                         }}
                     />
+                    {/* Follow-up date */}
+                    <div className="flex items-center gap-2">
+                        <label
+                            htmlFor="note-followup"
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 select-none"
+                        >
+                            <CalendarClock className="h-3.5 w-3.5" />
+                            Follow-up date
+                        </label>
+                        <input
+                            id="note-followup"
+                            type="datetime-local"
+                            value={newNoteFollowUp}
+                            onChange={(e) => setNewNoteFollowUp(e.target.value)}
+                            disabled={addingNote}
+                            className="h-8 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground
+                                       focus:outline-none focus:ring-1 focus:ring-primary/50
+                                       disabled:opacity-50 scheme-light dark:scheme-dark"
+                        />
+                        {newNoteFollowUp && (
+                            <button
+                                type="button"
+                                onClick={() => setNewNoteFollowUp("")}
+                                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                                Clear
+                            </button>
+                        )}
+                    </div>
                     <div className="flex justify-end">
                         <Button
                             size="sm"

@@ -59,13 +59,13 @@ const STAGE_DOT: Record<string, string> = {
 //     qualified: "bg-green-50",
 //     lost: "bg-gray-50",
 // };
-const STAGE_BG: Record<string, string> = {
-    new: "bg-slate-50",
-    contacted: "bg-slate-50",
-    negotiation: "bg-slate-50",
-    qualified: "bg-slate-50",
-    lost: "bg-slate-50",
-};
+// const STAGE_BG: Record<string, string> = {
+//     new: "bg-slate-50",
+//     contacted: "bg-slate-50",
+//     negotiation: "bg-slate-50",
+//     qualified: "bg-slate-50",
+//     lost: "bg-slate-50",
+// };
 
 // Avatar colours per name hash
 const AVATAR_COLORS = [
@@ -325,13 +325,13 @@ export function KanbanBoardView() {
                                         const stageName = stage.name.toLowerCase();
                                         const leads = columns[stage.id] ?? [];
                                         const dotColor = STAGE_DOT[stageName] ?? "bg-primary";
-                                        const colBg = STAGE_BG[stageName] ?? "bg-muted/30";
+                                        // const colBg = STAGE_BG[stageName] ?? "bg-muted/30";
 
                                         return (
                                             <KanbanColumn
                                                 key={stage.id}
                                                 value={stage.id}
-                                                className={`flex flex-col min-w-[240px] w-[360px] shrink-0 rounded-xl border border-border/40 p-2 gap-2 ${colBg}`}
+                                                className={`flex flex-col min-w-[240px] w-[360px] shrink-0 rounded-xl border border-border/40 p-2 gap-2 bg-card dark:bg-card-dark`}
                                             >
                                                 {/* Column header */}
                                                 <div className="flex items-center justify-between px-1 py-0.5">
@@ -380,7 +380,7 @@ export function KanbanBoardView() {
                                                                 asChild
                                                             >
                                                                 <div
-                                                                    className="group rounded-lg border border-border bg-card p-3 shadow-xs cursor-grab active:cursor-grabbing hover:shadow-sm transition-shadow"
+                                                                    className="group rounded-lg border border-border bg-background dark:bg-background-dark p-3 shadow-xs cursor-grab active:cursor-grabbing hover:shadow-sm transition-shadow"
                                                                     onMouseDown={() => { dragRef.current = false; }}
                                                                     onMouseMove={() => { dragRef.current = true; }}
                                                                     onMouseUp={() => {

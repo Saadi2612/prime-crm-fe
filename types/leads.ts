@@ -27,6 +27,7 @@ export interface LeadTransfer {
 export interface LeadNote {
   id: string;
   body: string;
+  next_follow_up?: string | null;
   created_at: string;
 }
 
@@ -58,7 +59,6 @@ export interface Lead {
   job_title?: string;
   min_budget?: number;
   max_budget?: number;
-  next_follow_up?: string;
   /** Immutable notes; use POST /leads/{id}/notes/ to add */
   notes?: LeadNote[];
   latest_note?: LeadNote | null;
@@ -80,4 +80,19 @@ export interface LeadsQueryParams {
   search?: string;
   page?: number;
   page_size?: number;
+  assigned_to?: string;
+  is_paginated?: boolean;
+}
+
+export interface FollowUpAlert {
+  id: string;
+  body: string;
+  next_follow_up: string;
+  created_at: string;
+  lead: {
+    id: string;
+    full_name: string;
+    phone?: string;
+    email?: string;
+  };
 }

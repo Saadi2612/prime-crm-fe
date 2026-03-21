@@ -134,7 +134,7 @@ export function AddLeadDialog({
             ...(form.job_title && { job_title: form.job_title.trim() }),
             ...(form.min_budget && { min_budget: Number(form.min_budget) }),
             ...(form.max_budget && { max_budget: Number(form.max_budget) }),
-            ...(form.next_follow_up && { next_follow_up: form.next_follow_up }),
+            ...(form.next_follow_up && { next_follow_up: new Date(form.next_follow_up).toISOString() }),
             ...(form.notes && { notes: form.notes.trim() }),
             ...(form.stage && { stage: form.stage }),
             ...(form.project && { project: form.project }),
@@ -303,7 +303,7 @@ export function AddLeadDialog({
                                     <Label htmlFor="next_follow_up">Next Follow-Up</Label>
                                     <Input
                                         id="next_follow_up"
-                                        type="date"
+                                        type="datetime-local"
                                         value={form.next_follow_up}
                                         onChange={(e) => set("next_follow_up", e.target.value)}
                                     />
