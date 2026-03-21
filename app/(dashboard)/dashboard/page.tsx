@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
     useEffect(() => {
         if (authLoading || user?.role === "agent") return;
-        
+
         async function loadData() {
             setLoading(true);
             try {
@@ -153,12 +153,12 @@ export default function DashboardPage() {
                                     <linearGradient id="fillLeads" x1="0" y1="0" x2="0" y2="1">
                                         <stop
                                             offset="5%"
-                                            stopColor="var(--color-leads)"
+                                            stopColor="var(--primary)"
                                             stopOpacity={0.8}
                                         />
                                         <stop
                                             offset="95%"
-                                            stopColor="var(--color-leads)"
+                                            stopColor="var(--primary)"
                                             stopOpacity={0.1}
                                         />
                                     </linearGradient>
@@ -202,7 +202,7 @@ export default function DashboardPage() {
                                     dataKey="count"
                                     type="monotone"
                                     fill="url(#fillLeads)"
-                                    stroke="var(--color-leads)"
+                                    stroke="var(--primary)"
                                     strokeWidth={2}
                                 />
                             </AreaChart>

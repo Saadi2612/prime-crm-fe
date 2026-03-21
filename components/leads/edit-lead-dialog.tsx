@@ -288,7 +288,7 @@ export function EditLeadDialog({ open, onOpenChange, lead, onSuccess }: EditLead
                                     <Label htmlFor="edit_next_follow_up">Next Follow-Up</Label>
                                     <Input
                                         id="edit_next_follow_up"
-                                        type="date"
+                                        type="datetime-local"
                                         value={form.next_follow_up}
                                         onChange={(e) => set("next_follow_up", e.target.value)}
                                     />
@@ -396,7 +396,7 @@ function toFormState(lead: Lead): FormState {
         job_title: lead.job_title ?? "",
         min_budget: lead.min_budget != null ? String(lead.min_budget) : "",
         max_budget: lead.max_budget != null ? String(lead.max_budget) : "",
-        next_follow_up: lead.next_follow_up ? lead.next_follow_up.slice(0, 10) : "",
+        next_follow_up: lead.latest_note?.next_follow_up ? lead.latest_note.next_follow_up.slice(0, 16) : "",
         notes: "",
         stage: stageId(lead.stage),
         project: projectId(lead.project),

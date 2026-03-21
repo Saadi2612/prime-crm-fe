@@ -161,6 +161,8 @@ export async function fetchLeads(params?: LeadsQueryParams): Promise<Lead[]> {
   if (params?.search) query.set("search", params.search);
   if (params?.page) query.set("page", String(params.page));
   if (params?.page_size) query.set("page_size", String(params.page_size));
+  if (params?.assigned_to) query.set("assigned_to", params.assigned_to);
+  if (params?.is_paginated === false) query.set("is_paginated", "false");
   const qs = query.toString();
   return apiFetch<Lead[]>(`/leads/${qs ? `?${qs}` : ""}`);
 }
@@ -201,10 +203,14 @@ export async function fetchLeadNotes(leadId: string): Promise<LeadNote[]> {
   return apiFetch<LeadNote[]>(`/leads/${leadId}/notes/`);
 }
 
-export async function createLeadNote(leadId: string, body: string): Promise<LeadNote> {
+export async function createLeadNote(
+  leadId: string,
+  body: string,
+  nextFollowUp?: string | null,
+): Promise<LeadNote> {
   return apiFetch<LeadNote>(`/leads/${leadId}/notes/`, {
     method: "POST",
-    body: JSON.stringify({ body }),
+    body: JSON.stringify({ body, ...(nextFollowUp ? { next_follow_up: nextFollowUp } : {}) }),
   });
 }
 
@@ -228,6 +234,10 @@ export async function transferLead(
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
+
+export async function fetchTodayFollowUps(): Promise<import("@/types/leads").FollowUpAlert[]> {
+  return apiFetch<import("@/types/leads").FollowUpAlert[]>("/leads/today-follow-ups/");
+}
 
 export interface DashboardStats {
   total_leads: number;

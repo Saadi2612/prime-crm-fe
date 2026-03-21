@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { FollowUpAlerts } from "@/components/follow-up-alerts";
 
 type NavItem = {
     title: string;
@@ -109,6 +110,7 @@ export function AppSidebar() {
     function toggleTheme(e: React.MouseEvent<HTMLButtonElement>) {
         const nextTheme = theme === "dark" ? "light" : "dark";
 
+        /*
         // Pin the ripple origin to the centre of the clicked button
         const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
         const x = rect.left + rect.width / 2;
@@ -140,6 +142,9 @@ export function AppSidebar() {
                 document.documentElement.style.transition = originalTransition;
             });
         }
+        */
+
+        setTheme(nextTheme);
     }
 
     const initials = user
@@ -228,6 +233,9 @@ export function AppSidebar() {
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
+
+                {/* Follow Ups */}
+                <FollowUpAlerts />
 
                 {/* Admin Section */}
                 {user?.role === "admin" && (
