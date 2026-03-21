@@ -89,7 +89,7 @@ export function FollowUpAlerts() {
           const timeStr = format(parseISO(alert.next_follow_up), "h:mm a");
           return (
             <Link href={`/leads/${alert.lead.id}`} key={alert.id} className="block group">
-              <div className="relative overflow-hidden rounded-xl border border-accent-foreground/20 bg-linear-to-br from-accent-foreground/5 pb-2 shadow-sm hover:shadow-md transition-all duration-300 dark:from-accent-foreground/10 dark:border-accent-foreground/20">
+              <div className="relative overflow-hidden rounded-xl border border-accent-foreground/20 bg-linear-to-br from-accent-foreground/5 pb-2 shadow-md hover:shadow-lg transition-all duration-300 dark:from-accent-foreground/10 dark:border-accent-foreground/20 hover:scale-105">
                 {/* Accent line */}
                 <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-accent-foreground to-accent-foreground/50" />
 
