@@ -15,6 +15,7 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Eye, EyeOff, Loader2, Building2 } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -73,7 +74,12 @@ export default function LoginPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <Label htmlFor="password">Password</Label>
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="password">Password</Label>
+                            <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+                                Forgot password?
+                            </Link>
+                        </div>
                         <div className="relative">
                             <Input
                                 id="password"
