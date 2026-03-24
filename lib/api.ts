@@ -149,6 +149,34 @@ export async function acceptInvite(data: {
 
 // ── Lead Stages ───────────────────────────────────────────────────────────────
 
+export async function forgotPassword(email: string): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>("/auth/forgot-password/", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function verifyOtp(email: string, otp_code: string): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>("/auth/verify-otp/", {
+    method: "POST",
+    body: JSON.stringify({ email, otp_code }),
+  });
+}
+
+export async function resetPassword(
+  email: string,
+  otp_code: string,
+  new_password: string,
+  confirm_password: string
+): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>("/auth/reset-password/", {
+    method: "POST",
+    body: JSON.stringify({ email, otp_code, new_password, confirm_password }),
+  });
+}
+
+// ── Lead Stages ───────────────────────────────────────────────────────────────
+
 export async function fetchStages(): Promise<Stage[]> {
   return apiFetch<Stage[]>("/leads/stages/");
 }
