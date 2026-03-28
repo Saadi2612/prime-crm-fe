@@ -216,6 +216,11 @@ export async function fetchLead(id: string): Promise<Lead> {
   return apiFetch<Lead>(`/leads/${id}/`);
 }
 
+/** Fetch all leads that have no assigned user. Admin/manager only. */
+export async function fetchUnassignedLeads(): Promise<Lead[]> {
+  return apiFetch<Lead[]>("/leads/unassigned/");
+}
+
 export async function deleteLead(id: string): Promise<void> {
   return apiFetch<void>(`/leads/${id}/`, { method: "DELETE" });
 }

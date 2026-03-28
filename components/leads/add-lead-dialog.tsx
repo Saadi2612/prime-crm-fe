@@ -240,7 +240,7 @@ export function AddLeadDialog({
 
                             <div className="grid gap-4 md:grid-cols-2">
                                 {/* Stage */}
-                                <div className="space-y-1.5">
+                                {/* <div className="space-y-1.5">
                                     <Label>Stage</Label>
                                     <Select value={form.stage} onValueChange={(v) => set("stage", v)}>
                                         <SelectTrigger className="w-full">
@@ -254,7 +254,7 @@ export function AddLeadDialog({
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                </div>
+                                </div> */}
 
                                 {/* Project */}
                                 <div className="space-y-1.5">
@@ -278,7 +278,7 @@ export function AddLeadDialog({
                                 </div>
 
                                 {/* Assigned To */}
-                                <div className="space-y-1.5">
+                                {/* <div className="space-y-1.5">
                                     <Label>Assigned To</Label>
                                     <Select value={form.assigned_to} onValueChange={(v) => set("assigned_to", v)}>
                                         <SelectTrigger className="w-full">
@@ -296,7 +296,7 @@ export function AddLeadDialog({
                                             )}
                                         </SelectContent>
                                     </Select>
-                                </div>
+                                </div> */}
 
                                 {/* Follow-Up Date */}
                                 <div className="space-y-1.5">
