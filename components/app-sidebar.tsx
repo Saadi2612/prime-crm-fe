@@ -13,7 +13,7 @@ import {
     Settings,
     BarChart3,
     UserCircle2,
-    ListFilter,
+    Inbox,
     LogOut,
     Moon,
     Sun,
@@ -83,9 +83,9 @@ const mainNavItems: NavItem[] = [
 
 const adminNavItems: NavItem[] = [
     {
-        title: "All Leads",
-        href: "/leads",
-        icon: ListFilter,
+        title: "New Leads",
+        href: "/new-leads",
+        icon: Inbox,
     },
     {
         title: "Team",
