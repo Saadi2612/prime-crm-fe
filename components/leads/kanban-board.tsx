@@ -2,15 +2,24 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { GripVertical, AlertTriangle, LayoutGrid, List, LogIn, Plus, RefreshCw, Search, ExternalLink, Mail, Phone, FileText, DollarSign } from "lucide-react";
+import { GripVertical, AlertTriangle, LayoutGrid, List, LogIn, Plus, RefreshCw, Search, ExternalLink, Mail, Phone, FileText, DollarSign, Loader2, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 import type { Lead, Stage } from "@/types/leads";
-import { fetchLeads, fetchStages, updateLeadStage } from "@/lib/api";
+import type { TeamMember } from "@/lib/api";
+import { fetchLeads, fetchStages, updateLeadStage, fetchTeamMembers, transferLead } from "@/lib/api";
 import { toast } from "sonner";
 import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
 import { LeadsStatsCards } from "@/components/leads/leads-stats-cards";
 import { LeadCard } from "@/components/leads/lead-card";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import {
     Kanban,
@@ -92,6 +101,116 @@ function stageId(stage: Lead["stage"] | undefined | null): string | undefined {
     return stage;
 }
 
+function LeadAssigner({ lead, teamMembers, onAssigned }: { lead: Lead, teamMembers: TeamMember[], onAssigned: () => void }) {
+    const [search, setSearch] = useState("");
+    const [assigningTo, setAssigningTo] = useState<string | null>(null);
+    const [open, setOpen] = useState(false);
+
+    const filtered = teamMembers.filter((m) =>
+        m.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        m.email.toLowerCase().includes(search.toLowerCase())
+    );
+
+    async function handleAssign(member: TeamMember) {
+        setAssigningTo(member.id);
+        try {
+            await transferLead(lead.id, member.id, "Assigned from Kanban");
+            toast.success(`Assigned to ${member.full_name}`);
+            setOpen(false);
+            onAssigned();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Failed to assign lead");
+        } finally {
+            setAssigningTo(null);
+        }
+    }
+
+    const assignedToDisplay = lead.assigned_to 
+        ? (typeof lead.assigned_to === "object" && "full_name" in (lead.assigned_to as object) ? (lead.assigned_to as { full_name: string }).full_name : String(lead.assigned_to))
+        : null;
+
+    return (
+        <DropdownMenu open={open} onOpenChange={(o) => { setOpen(o); if (!o) setSearch(""); }}>
+            <DropdownMenuTrigger asChild>
+                <button
+                    className="h-6 w-6 rounded-full shrink-0 flex items-center justify-center hover:ring-2 hover:ring-primary/20 transition-all cursor-pointer"
+                    title={assignedToDisplay || "Assign to user"}
+                    aria-label="Assign lead to a user"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                >
+                    {assignedToDisplay ? (
+                        <Avatar className="h-5 w-5 shrink-0">
+                            <AvatarFallback className={`text-[9px] font-semibold ${avatarColor(assignedToDisplay)}`}>
+                                {initials(assignedToDisplay)}
+                            </AvatarFallback>
+                        </Avatar>
+                    ) : (
+                        <div className="h-5 w-5 rounded-full bg-muted border border-dashed border-muted-foreground/40 flex items-center justify-center text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5">
+                            <User className="h-3 w-3" />
+                        </div>
+                    )}
+                </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 p-0" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                <div className="p-2 pb-1.5">
+                    <DropdownMenuLabel className="px-1 py-0 pb-2 text-xs font-semibold">
+                        Assign to
+                    </DropdownMenuLabel>
+                    <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                        <Input
+                            placeholder="Search..."
+                            className="h-8 pl-8 text-xs"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            autoFocus
+                        />
+                    </div>
+                </div>
+                <DropdownMenuSeparator className="my-0" />
+                <div className="max-h-52 overflow-y-auto py-1">
+                    {filtered.length === 0 ? (
+                        <p className="text-xs text-muted-foreground px-3 py-4 text-center">
+                            No users found
+                        </p>
+                    ) : (
+                        filtered.map((member) => (
+                            <DropdownMenuItem
+                                key={member.id}
+                                className="flex items-center gap-2.5 px-2.5 py-2 cursor-pointer"
+                                onSelect={(e) => {
+                                    e.preventDefault();
+                                    handleAssign(member);
+                                }}
+                                disabled={assigningTo !== null}
+                            >
+                                <Avatar className="h-7 w-7 shrink-0">
+                                    <AvatarFallback className={`text-[10px] font-semibold ${avatarColor(member.full_name)}`}>
+                                        {initials(member.full_name || member.email)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-xs font-medium text-foreground truncate">
+                                        {member.full_name || member.email}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground capitalize">
+                                        {member.role}
+                                    </p>
+                                </div>
+                                {assigningTo === member.id && (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+                                )}
+                            </DropdownMenuItem>
+                        ))
+                    )}
+                </div>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    );
+}
+
 export function KanbanBoardView() {
     const router = useRouter();
     const dragRef = useRef(false);
@@ -99,6 +218,7 @@ export function KanbanBoardView() {
     // ── Data state ────────────────────────────────────────────────────────────
     const [stages, setStages] = useState<Stage[]>([]);
     const [columns, setColumns] = useState<Record<string, Lead[]>>({});
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
     const [stagesLoading, setStagesLoading] = useState(true);
     const [leadsLoading, setLeadsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -112,10 +232,11 @@ export function KanbanBoardView() {
 
     // ── Fetch stages ──────────────────────────────────────────────────────────
     useEffect(() => {
-        fetchStages()
-            .then((data) => {
-                const sorted = [...data].sort((a, b) => a.order - b.order);
+        Promise.all([fetchStages(), fetchTeamMembers()])
+            .then(([stagesData, teamData]) => {
+                const sorted = [...stagesData].sort((a, b) => a.order - b.order);
                 setStages(sorted);
+                setTeamMembers(teamData);
             })
             .catch((e) => setError(e.message))
             .finally(() => setStagesLoading(false));
@@ -477,21 +598,11 @@ export function KanbanBoardView() {
                                                                             {lead.project?.name ?? "-"}
                                                                         </Link>
                                                                         {/* Assignee */}
-                                                                        {lead.assigned_to
-                                                                            ? (() => {
-                                                                                const name = typeof lead.assigned_to === "object" && "full_name" in (lead.assigned_to as object)
-                                                                                    ? (lead.assigned_to as { full_name: string }).full_name
-                                                                                    : String(lead.assigned_to);
-                                                                                return (
-                                                                                    <Avatar className="h-5 w-5 shrink-0" title={name}>
-                                                                                        <AvatarFallback className={`text-[9px] font-semibold ${avatarColor(name)}`}>
-                                                                                            {initials(name)}
-                                                                                        </AvatarFallback>
-                                                                                    </Avatar>
-                                                                                );
-                                                                            })()
-                                                                            : <span className="shrink-0 text-muted-foreground/50">–</span>
-                                                                        }
+                                                                        <LeadAssigner 
+                                                                            lead={lead} 
+                                                                            teamMembers={teamMembers} 
+                                                                            onAssigned={loadLeads} 
+                                                                        />
                                                                     </div>
                                                                 </div>
                                                             </KanbanItem>
