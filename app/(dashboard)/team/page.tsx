@@ -372,10 +372,10 @@ export default function TeamPage() {
                                         </div>
                                         <div className="text-center">
                                             <div className="text-xl font-bold text-foreground">
-                                                {member.lead_stats?.won ?? 0}
+                                                {member.lead_stats?.qualified ?? 0}
                                             </div>
                                             <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mt-0.5">
-                                                Won
+                                                Qualified
                                             </div>
                                         </div>
                                     </div>
