@@ -447,6 +447,34 @@ export default function LeadDetailPage() {
                 </div>
             </div>
 
+            {/* ── Form Responses (custom_data) ───────────────────────── */}
+            {lead.custom_data && Object.keys(lead.custom_data).length > 0 && (() => {
+                const formatKey = (k: string) =>
+                    k.replace(/_+$/, "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+                const formatValue = (v: string) =>
+                    v.replace(/_+$/, "").replace(/_/g, " ");
+                const entries = Object.entries(lead.custom_data!);
+                return (
+                    <div className="rounded-2xl border border-border bg-card p-6">
+                        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">
+                            Form Responses
+                        </p>
+                        <div className="divide-y divide-border">
+                            {entries.map(([key, value]) => (
+                                <div key={key} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-4 py-3 first:pt-0 last:pb-0">
+                                    <span className="text-xs font-medium text-muted-foreground sm:w-64 sm:shrink-0 leading-5">
+                                        {formatKey(key)}
+                                    </span>
+                                    <span className="text-sm text-foreground leading-5 capitalize">
+                                        {formatValue(value) || <span className="italic text-muted-foreground">—</span>}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* ── Transfer History ───────────────────────────────────────── */}
             {(() => {
                 const history = lead.transfer_history ?? [];

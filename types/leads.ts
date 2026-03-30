@@ -69,6 +69,7 @@ export interface Lead {
   project?: ProjectRef | null;
   assigned_to?: { id: string; full_name: string; email: string } | string | null;
   transfer_history?: LeadTransfer[];
+  custom_data?: Record<string, string> | null;
   form?: string;
   property_interest?: string;
   created_at: string;
