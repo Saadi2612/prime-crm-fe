@@ -58,7 +58,7 @@ const STAGE_COLORS: Record<string, string> = {
     new: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
     "in progress": "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
     qualified: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-    lost: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
+    unqualified: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300",
     contacted: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
 };
 
@@ -278,7 +278,7 @@ export default function TeamMemberDetailPage() {
         );
     }
 
-    const stats = member.lead_stats ?? { total: 0, active: 0, won: 0, lost: 0 };
+    const stats = member.lead_stats ?? { total: 0, active: 0, qualified: 0, unqualified: 0 };
 
     return (
         <div className="flex flex-col h-full max-w-5xl mx-auto w-full space-y-4">
@@ -377,17 +377,17 @@ export default function TeamMemberDetailPage() {
                             <span className="p-2 rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 mb-1">
                                 <CheckCircle2 className="h-5 w-5" />
                             </span>
-                            <span className="text-2xl font-bold tracking-tight text-foreground">{stats.won}</span>
+                            <span className="text-2xl font-bold tracking-tight text-foreground">{stats.qualified}</span>
                             <span className="text-xs font-medium text-muted-foreground uppercase">Qualified</span>
                         </div>
 
-                        {/* Lost */}
+                        {/* Unqualified */}
                         <div className="rounded-xl border border-border bg-card p-4 flex flex-col items-center justify-center text-center space-y-1.5 shadow-sm">
                             <span className="p-2 rounded-full bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 mb-1">
                                 <XCircle className="h-5 w-5" />
                             </span>
-                            <span className="text-2xl font-bold tracking-tight text-foreground">{stats.lost}</span>
-                            <span className="text-xs font-medium text-muted-foreground uppercase">Lost</span>
+                            <span className="text-2xl font-bold tracking-tight text-foreground">{stats.unqualified}</span>
+                            <span className="text-xs font-medium text-muted-foreground uppercase">Unqualified</span>
                         </div>
                     </div>
                 </div>

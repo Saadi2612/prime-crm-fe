@@ -276,6 +276,7 @@ export interface DashboardStats {
   total_leads: number;
   active_leads: number;
   qualified_leads: number;
+  unqualified_leads: number;
   follow_ups_today: number;
   stage_counts?: Record<string, number>;
 }
@@ -373,8 +374,8 @@ export interface TeamMember {
   lead_stats?: {
     total: number;
     active: number;
-    won: number;
-    lost: number;
+    qualified: number;
+    unqualified: number;
   };
 }
 
