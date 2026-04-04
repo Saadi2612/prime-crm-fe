@@ -272,6 +272,10 @@ export async function fetchTodayFollowUps(): Promise<import("@/types/leads").Fol
   return apiFetch<import("@/types/leads").FollowUpAlert[]>("/leads/today-follow-ups/");
 }
 
+export async function fetchAllFollowUps(): Promise<any> {
+  return apiFetch<any>("/leads/follow-ups/");
+}
+
 export interface DashboardStats {
   total_leads: number;
   active_leads: number;
