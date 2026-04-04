@@ -17,6 +17,7 @@ import {
     LogOut,
     Moon,
     Sun,
+    Bell,
     type LucideIcon,
 } from "lucide-react";
 
@@ -42,7 +43,6 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronRight } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { FollowUpAlerts } from "@/components/follow-up-alerts";
 
 type NavItem = {
     title: string;
@@ -60,6 +60,11 @@ const mainNavItems: NavItem[] = [
         title: "Dashboard",
         href: "/dashboard",
         icon: LayoutDashboard,
+    },
+    {
+        title: "Follow Ups",
+        href: "/follow-ups",
+        icon: Bell,
     },
     {
         title: "Leads",
@@ -105,7 +110,41 @@ export function AppSidebar() {
     const { user, logout } = useAuth();
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const [followUpCount, setFollowUpCount] = useState(0);
+
     useEffect(() => setMounted(true), []);
+
+    useEffect(() => {
+        let isMounted = true;
+        async function loadFollowUps() {
+            try {
+                const { fetchAllFollowUps } = await import("@/lib/api");
+                const response = await fetchAllFollowUps();
+                if (!isMounted) return;
+                
+                if (Array.isArray(response)) {
+                    if (response.length > 0 && 'user' in response[0]) {
+                        // Admin grouped format
+                        const count = response.reduce((acc, group) => acc + group.follow_ups.length, 0);
+                        setFollowUpCount(count);
+                    } else {
+                        // Agent/Manager flat format
+                        setFollowUpCount(response.length);
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch follow-ups count:", error);
+            }
+        }
+
+        if (user) {
+            loadFollowUps();
+            const interval = setInterval(loadFollowUps, 5 * 60 * 1000);
+            return () => clearInterval(interval);
+        }
+        
+        return () => { isMounted = false; };
+    }, [user]);
 
     function toggleTheme(e: React.MouseEvent<HTMLButtonElement>) {
         const nextTheme = theme === "dark" ? "light" : "dark";
@@ -222,9 +261,14 @@ export function AppSidebar() {
                                             isActive={pathname === item.href}
                                             tooltip={item.title}
                                         >
-                                            <Link href={item.href}>
-                                                <item.icon className="h-4 w-4" />
+                                            <Link href={item.href} className="flex flex-1 items-center">
+                                                <item.icon className="h-4 w-4 mr-2" />
                                                 <span>{item.title}</span>
+                                                {item.title === "Follow Ups" && followUpCount > 0 && (
+                                                    <span className="ml-auto bg-accent-foreground/20 text-accent-foreground text-[10px] font-bold px-1.5 py-0.5 rounded-full flex items-center justify-center min-w-4 h-4 leading-none">
+                                                        {followUpCount}
+                                                    </span>
+                                                )}
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
@@ -233,9 +277,6 @@ export function AppSidebar() {
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
-
-                {/* Follow Ups */}
-                <FollowUpAlerts />
 
                 {/* Admin Section */}
                 {user?.role === "admin" && (
