@@ -594,9 +594,13 @@ export function KanbanBoardView() {
 
                                                                     <div className="mt-2 pt-2 border-t border-border flex items-center justify-between gap-2 text-xs text-muted-foreground">
                                                                         {/* Associated project */}
-                                                                        <Link href={`/projects/${lead.project?.id}`} className="truncate hover:underline" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
-                                                                            {lead.project?.name ?? "-"}
-                                                                        </Link>
+                                                                        {lead.project?.id ? (
+                                                                            <Link href={`/projects/${lead.project.id}`} className="truncate hover:underline" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.stopPropagation()}>
+                                                                                {lead.project.name ?? "-"}
+                                                                            </Link>
+                                                                        ) : (
+                                                                            <span className="truncate text-muted-foreground/60">-</span>
+                                                                        )}
                                                                         {/* Assignee */}
                                                                         <LeadAssigner 
                                                                             lead={lead} 
