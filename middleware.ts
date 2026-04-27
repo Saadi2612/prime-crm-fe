@@ -12,7 +12,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Check for access token in cookies (set by the client after login)
-  const token = request.cookies.get("prime_access")?.value;
+  const token = request.cookies.get("crm_access")?.value;
 
   if (!token) {
     const loginUrl = new URL("/login", request.url);
