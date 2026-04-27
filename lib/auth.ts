@@ -22,16 +22,16 @@ export interface AuthSession {
 
 // ── Token storage (localStorage, client-side only) ─────────────────────────
 
-export const TOKEN_KEY = "prime_access";
-export const REFRESH_KEY = "prime_refresh";
-export const USER_KEY = "prime_user";
+export const TOKEN_KEY = "crm_access";
+export const REFRESH_KEY = "crm_refresh";
+export const USER_KEY = "crm_user";
 
 export function saveSession(session: AuthSession): void {
   localStorage.setItem(TOKEN_KEY, session.tokens.access);
   localStorage.setItem(REFRESH_KEY, session.tokens.refresh);
   localStorage.setItem(USER_KEY, JSON.stringify(session.user));
   // Also persist in a cookie so Next.js middleware can read it
-  document.cookie = `prime_access=${session.tokens.access}; path=/; SameSite=Strict`;
+  document.cookie = `crm_access=${session.tokens.access}; path=/; SameSite=Strict`;
 }
 
 export function clearSession(): void {
@@ -39,7 +39,7 @@ export function clearSession(): void {
   localStorage.removeItem(REFRESH_KEY);
   localStorage.removeItem(USER_KEY);
   // Remove the cookie too
-  document.cookie = "prime_access=; path=/; max-age=0";
+  document.cookie = "crm_access=; path=/; max-age=0";
 }
 
 export function getAccessToken(): string | null {

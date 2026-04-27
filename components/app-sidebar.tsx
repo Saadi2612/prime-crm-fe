@@ -128,7 +128,7 @@ export function AppSidebar() {
                 if (!isMounted) return;
                 if (Array.isArray(response)) {
                     if (response.length > 0 && "user" in response[0]) {
-                        const count = response.reduce((acc: number, group: { follow_ups: unknown[] }) => acc + group.follow_ups.length, 0);
+                        const count = (response as unknown as { follow_ups: unknown[] }[]).reduce((acc, group) => acc + group.follow_ups.length, 0);
                         setFollowUpCount(count);
                     } else {
                         setFollowUpCount(response.length);

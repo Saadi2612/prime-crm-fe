@@ -2,6 +2,7 @@ import type { Lead, LeadNote, LeadsQueryParams, Stage, LeadTransfer } from "@/ty
 import type { AuthSession } from "@/lib/auth";
 import { clearSession } from "@/lib/auth";
 
+
 /** Human-readable messages for common HTTP status codes */
 const STATUS_MESSAGES: Record<number, string> = {
   400: "Invalid request. Please check your input.",
@@ -13,12 +14,38 @@ const STATUS_MESSAGES: Record<number, string> = {
   503: "Service unavailable. Please try again later.",
 };
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+function getBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+
+    // Local dev: lfc.localhost:3000 → lfc.localhost:8000
+    if (hostname.includes("localhost")) {
+      return `${protocol}//${hostname}:8000`;
+    }
+
+    // Production: lfc.mypakcrm.com → lfc.api.mypakcrm.com
+    const parts = hostname.split(".");
+    if (parts.length >= 2) {
+      parts.splice(1, 0, "api");
+      return `${protocol}//${parts.join(".")}`;
+    }
+  }
+  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+}
+
+function getTenantHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const subdomain = window.location.hostname.split(".")[0];
+  return subdomain ? { "X-Tenant": subdomain } : {};
+}
 
 function getAuthHeaders(): Record<string, string> {
   if (typeof window === "undefined") return {};
-  const token = localStorage.getItem("prime_access");
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const token = localStorage.getItem("crm_access");
+  return {
+    ...getTenantHeader(),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
@@ -28,7 +55,7 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
     ...(options?.headers as Record<string, string> | undefined),
   };
 
-  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${getBaseUrl()}${path}`, { ...options, headers });
 
   if (!res.ok) {
     // On 401 – session is invalid or expired, force logout
@@ -74,7 +101,7 @@ export async function loginApi(
   email: string,
   password: string
 ): Promise<AuthSession> {
-  const res = await fetch(`${BASE_URL}/auth/login/`, {
+  const res = await fetch(`${getBaseUrl()}/auth/login/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -113,7 +140,7 @@ export async function acceptInvite(data: {
   password: string;
   confirm_password: string;
 }): Promise<AuthSession> {
-  const res = await fetch(`${BASE_URL}/auth/accept-invite/`, {
+  const res = await fetch(`${getBaseUrl()}/auth/accept-invite/`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
@@ -272,8 +299,8 @@ export async function fetchTodayFollowUps(): Promise<import("@/types/leads").Fol
   return apiFetch<import("@/types/leads").FollowUpAlert[]>("/leads/today-follow-ups/");
 }
 
-export async function fetchAllFollowUps(): Promise<any> {
-  return apiFetch<any>("/leads/follow-ups/");
+export async function fetchAllFollowUps(): Promise<import("@/types/leads").FollowUpAlert[]> {
+  return apiFetch<import("@/types/leads").FollowUpAlert[]>("/leads/follow-ups/");
 }
 
 export interface DashboardStats {
@@ -328,10 +355,10 @@ export async function fetchProject(id: string): Promise<Project> {
 }
 
 export async function createProject(data: FormData): Promise<Project> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("prime_access") : null;
-  const res = await fetch(`${BASE_URL}/projects/`, {
+  const token = typeof window !== "undefined" ? localStorage.getItem("crm_access") : null;
+  const res = await fetch(`${getBaseUrl()}/projects/`, {
     method: "POST",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: { ...getTenantHeader(), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: data,
   });
   if (!res.ok) {
@@ -346,10 +373,10 @@ export async function createProject(data: FormData): Promise<Project> {
 }
 
 export async function updateProject(id: string, data: FormData): Promise<Project> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("prime_access") : null;
-  const res = await fetch(`${BASE_URL}/projects/${id}/`, {
+  const token = typeof window !== "undefined" ? localStorage.getItem("crm_access") : null;
+  const res = await fetch(`${getBaseUrl()}/projects/${id}/`, {
     method: "PATCH",
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    headers: { ...getTenantHeader(), ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     body: data,
   });
   if (!res.ok) {
