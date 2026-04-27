@@ -125,7 +125,7 @@ function LeadAssigner({ lead, teamMembers, onAssigned }: { lead: Lead, teamMembe
         }
     }
 
-    const assignedToDisplay = lead.assigned_to 
+    const assignedToDisplay = lead.assigned_to
         ? (typeof lead.assigned_to === "object" && "full_name" in (lead.assigned_to as object) ? (lead.assigned_to as { full_name: string }).full_name : String(lead.assigned_to))
         : null;
 
@@ -598,10 +598,10 @@ export function KanbanBoardView() {
                                                                             {lead.project?.name ?? "-"}
                                                                         </Link>
                                                                         {/* Assignee */}
-                                                                        <LeadAssigner 
-                                                                            lead={lead} 
-                                                                            teamMembers={teamMembers} 
-                                                                            onAssigned={loadLeads} 
+                                                                        <LeadAssigner
+                                                                            lead={lead}
+                                                                            teamMembers={teamMembers}
+                                                                            onAssigned={loadLeads}
                                                                         />
                                                                     </div>
                                                                 </div>

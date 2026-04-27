@@ -1,24 +1,21 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Aleo, Space_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/auth-context";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-const fontSans = Space_Grotesk({
+// Azure Estate Design System — Plus Jakarta Sans for UI, JetBrains Mono for numerics
+const fontSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
-const fontSerif = Aleo({
+const fontMono = JetBrains_Mono({
   subsets: ["latin"],
-  variable: "--font-serif",
-});
-
-const fontMono = Space_Mono({
-  subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500"],
   variable: "--font-mono",
 });
 
@@ -34,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} antialiased`}>
+      <body className={`${fontSans.variable} ${fontMono.variable} antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

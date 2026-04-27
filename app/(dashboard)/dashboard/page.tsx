@@ -1,219 +1,405 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchDashboardStats, fetchDashboardChart, DashboardStats, DashboardChartData } from "@/lib/api";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  fetchDashboardStats,
+  fetchDashboardChart,
+  fetchLeads,
+  fetchProjects,
+  DashboardStats,
+  DashboardChartData,
+  Project,
+} from "@/lib/api";
+import type { Lead } from "@/types/leads";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Users, UserCheck, Target, CalendarDays } from "lucide-react";
+import { Users, Zap, ShieldCheck, CalendarDays, ArrowUpRight, MapPin, TrendingUp, Building2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 
 const chartConfig = {
-    leads: {
-        label: "Leads",
-        color: "var(--chart-1)",
-    },
+  leads: {
+    label: "Leads",
+    color: "#2563EB",
+  },
 } satisfies ChartConfig;
 
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  pillText,
+  pillVariant,
+  color = "blue",
+  loading,
+}: {
+  label: string;
+  value: number | string;
+  icon: React.ElementType;
+  pillText?: string;
+  pillVariant?: "white" | "solid";
+  color?: "blue" | "cyan" | "green" | "purple";
+  loading?: boolean;
+}) {
+  const styles = {
+    blue: {
+      bg: "bg-[#F4F8FE]",
+      text: "text-[#2563EB]",
+      pillSolid: "bg-[#2563EB] text-white",
+    },
+    cyan: {
+      bg: "bg-[#F0FAFD]",
+      text: "text-[#0EA5E9]",
+      pillSolid: "bg-[#0EA5E9] text-white",
+    },
+    green: {
+      bg: "bg-[#F0FDF4]",
+      text: "text-[#10B981]",
+      pillSolid: "bg-[#10B981] text-white",
+    },
+    purple: {
+      bg: "bg-[#F8F5FF]",
+      text: "text-[#8B5CF6]",
+      pillSolid: "bg-[#8B5CF6] text-white",
+    },
+  }[color];
+
+  return (
+    <div className={`rounded-[10px] p-6 flex flex-col justify-between h-[150px] ${styles.bg}`}>
+      <div className="flex items-start justify-between">
+        <Icon className={`w-5 h-5 ${styles.text}`} />
+        {pillText && (
+          <span
+            className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+              pillVariant === "solid" ? styles.pillSolid : `bg-white ${styles.text}`
+            }`}
+          >
+            {pillText}
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <div className="space-y-1">
+          <div className="h-3 w-20 bg-white/50 rounded animate-pulse" />
+          <div className="h-8 w-16 bg-white/50 rounded animate-pulse" />
+        </div>
+      ) : (
+        <div className="space-y-0.5">
+          <p className={`text-[10px] uppercase font-bold tracking-widest ${styles.text}`}>
+            {label}
+          </p>
+          <p className={`text-[36px] leading-none font-bold ${styles.text}`} style={{ letterSpacing: "-1px" }}>
+            {value}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-[#f8fafc] rounded-[10px] p-6 h-[150px] flex flex-col justify-between">
+      <div className="w-5 h-5 rounded bg-gray-200 animate-pulse" />
+      <div className="space-y-2">
+        <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
+        <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-    const { user, isLoading: authLoading } = useAuth();
-    const router = useRouter();
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [chartData, setChartData] = useState<DashboardChartData[]>([]);
-    const [days, setDays] = useState<"7" | "30">("30");
-    const [loading, setLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [chartData, setChartData] = useState<DashboardChartData[]>([]);
+  const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
+  const [featuredProject, setFeaturedProject] = useState<Project | null>(null);
+  const [days, setDays] = useState<"7" | "30">("30");
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        if (!authLoading && user?.role === "agent") {
-            router.replace("/leads");
-        }
-    }, [user, authLoading, router]);
-
-    useEffect(() => {
-        if (authLoading || user?.role === "agent") return;
-
-        async function loadData() {
-            setLoading(true);
-            try {
-                const [statsData, chartResponse] = await Promise.all([
-                    fetchDashboardStats(),
-                    fetchDashboardChart(parseInt(days)),
-                ]);
-                setStats(statsData);
-                setChartData(chartResponse);
-            } catch (error) {
-                console.error("Failed to load dashboard data:", error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        loadData();
-    }, [days, authLoading, user]);
-
-    if (authLoading || user?.role === "agent") {
-        return null;
+  useEffect(() => {
+    if (!authLoading && user?.role === "agent") {
+      router.replace("/leads");
     }
+  }, [user, authLoading, router]);
 
-    return (
-        <div className="flex-1 space-y-8 p-8 pt-6">
-            <div className="flex items-center justify-between space-y-2">
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-                    <p className="text-muted-foreground mt-1">Welcome back to PropFlow CRM</p>
+  useEffect(() => {
+    if (authLoading || user?.role === "agent") return;
+
+    async function loadData() {
+      setLoading(true);
+      try {
+        const [statsData, chartResponse, leadsData, projectsData] = await Promise.all([
+          fetchDashboardStats(),
+          fetchDashboardChart(parseInt(days)),
+          fetchLeads({ page_size: 3, is_paginated: false }),
+          fetchProjects(),
+        ]);
+        setStats(statsData);
+        setChartData(chartResponse);
+        const leads = Array.isArray(leadsData) ? leadsData : (leadsData as { results?: Lead[] }).results ?? [];
+        setRecentLeads(leads.slice(0, 3));
+        const projects = Array.isArray(projectsData) ? projectsData : [];
+        setFeaturedProject(projects[0] ?? null);
+      } catch (error) {
+        console.error("Failed to load dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [days, authLoading, user]);
+
+  if (authLoading || user?.role === "agent") {
+    return null;
+  }
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    return "Good evening";
+  };
+
+  return (
+    <div className="flex-1 min-h-full bg-background pb-12">
+      <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+
+        {/* ── Page header ────────────────────────────────────────── */}
+        <div>
+          <h1 className="text-[28px] font-bold text-[#0F172A] leading-tight">
+            Dashboard
+          </h1>
+          <p className="text-[#64748B] text-[13px] mt-1 -tracking-wide">
+            Welcome back to PropFlow CRM
+          </p>
+        </div>
+
+        {/* ── KPI Cards ──────────────────────────────────────────── */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          {loading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : stats ? (
+            <>
+              <StatCard label="Total Leads" value={stats.total_leads} icon={Users} color="blue" pillText="+12%" pillVariant="white" loading={false} />
+              <StatCard label="Active Leads" value={stats.active_leads} icon={Zap} color="cyan" pillText="+4.5%" pillVariant="white" loading={false} />
+              <StatCard label="Qualified Leads" value={stats.qualified_leads} icon={ShieldCheck} color="green" pillText="New" pillVariant="white" loading={false} />
+              <StatCard label="Follow-ups Today" value={stats.follow_ups_today} icon={CalendarDays} color="purple" pillText="Urgent" pillVariant="solid" loading={false} />
+            </>
+          ) : null}
+        </div>
+
+        {/* ── Chart ─────────────────────────────────── */}
+        <div className="bg-white rounded-[10px] flex flex-col p-8" style={{ boxShadow: "0 2px 8px rgba(37,99,235,0.04)" }}>
+          <div className="flex items-start justify-between mb-8">
+            <div>
+              <h2 className="text-[17px] font-bold text-[#0F172A]">Total Leads</h2>
+              <p className="text-[13px] text-[#94A3B8] mt-1 -tracking-wide">
+                Lead generation over the last 30 days
+              </p>
+            </div>
+            <div className="flex bg-[#F1F5F9] rounded-md p-1 mt-1">
+              {["Day", "Month", "Year"].map((opt) => (
+                <button
+                  key={opt}
+                  onClick={() => {}}
+                  className={`px-3.5 py-1 text-[11px] font-semibold rounded transition-colors ${
+                    opt === "Month"
+                      ? "bg-[#2563EB] text-white shadow-sm"
+                      : "text-[#64748B] hover:text-[#0F172A]"
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="w-full flex-1">
+            <ChartContainer config={chartConfig} className="h-[260px] w-full">
+              {chartData.length > 0 ? (
+                <AreaChart data={chartData} margin={{ top: 10, right: 0, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="fillLeads" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#2563EB" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} horizontal={false} />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={12}
+                    minTickGap={24}
+                    tick={{ fontSize: 9, fill: "#94A3B8", fontFamily: "var(--font-mono)", letterSpacing: "1px" }}
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return date.toLocaleDateString("en-US", { month: "short", day: "2-digit" }).toUpperCase();
+                    }}
+                  />
+                  <ChartTooltip
+                    cursor={{ stroke: "#2563EB", strokeWidth: 1, strokeDasharray: "3 3" }}
+                    content={
+                      <ChartTooltipContent
+                        labelFormatter={(value) =>
+                          new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                        }
+                        indicator="dot"
+                      />
+                    }
+                  />
+                  <Area
+                    dataKey="count"
+                    type="monotone"
+                    fill="url(#fillLeads)"
+                    stroke="#2563EB"
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: "#ffffff", stroke: "#2563EB", strokeWidth: 1.5 }}
+                    activeDot={{ r: 4, fill: "#2563EB", strokeWidth: 0 }}
+                  />
+                </AreaChart>
+              ) : (
+                <div className="flex h-full items-center justify-center">
+                  <p className="text-sm text-[#94A3B8]">Loading chart data…</p>
                 </div>
+              )}
+            </ChartContainer>
+          </div>
+        </div>
+
+        {/* ── Lower Section ─────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Recent Leads side panel */}
+          <div className="lg:col-span-2 bg-white rounded-[10px] p-6 flex flex-col shadow-sm border border-transparent" style={{ boxShadow: "0 2px 8px rgba(37,99,235,0.04)" }}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-[17px] font-bold text-[#0F172A]">Recent Leads</h2>
+              <button
+                onClick={() => router.push("/leads")}
+                className="text-[13px] font-semibold text-[#2563EB] hover:text-[#1D4ED8]"
+              >
+                View All
+              </button>
             </div>
 
-            {loading && !stats ? (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                    {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="animate-pulse">
-                            <CardHeader className="h-[100px]" />
-                        </Card>
-                    ))}
-                </div>
-            ) : (
-                stats && (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                                <Users className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats.total_leads}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Active Leads</CardTitle>
-                                <Target className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats.active_leads}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Qualified Leads</CardTitle>
-                                <UserCheck className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats.qualified_leads}</div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium">Follow-ups Today</CardTitle>
-                                <CalendarDays className="h-4 w-4 text-muted-foreground" />
-                            </CardHeader>
-                            <CardContent>
-                                <div className="text-2xl font-bold">{stats.follow_ups_today}</div>
-                            </CardContent>
-                        </Card>
+            <div className="flex flex-col gap-3 flex-1">
+              {loading ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center gap-3 p-3 bg-[#F8FAFC] rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse shrink-0" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="h-3.5 w-24 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 w-32 bg-gray-200 rounded animate-pulse" />
                     </div>
-                )
-            )}
-
-            {/* Leads Chart */}
-            <Card className="col-span-4">
-                <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
-                    <div className="grid flex-1 gap-1 text-center sm:text-left">
-                        <CardTitle>Total Leads</CardTitle>
-                        <CardDescription>
-                            Lead generation over the last {days} days
-                        </CardDescription>
-                    </div>
-                    <Select value={days} onValueChange={(val: "7" | "30") => setDays(val)}>
-                        <SelectTrigger
-                            className="w-[160px] rounded-lg sm:ml-auto"
-                            aria-label="Select days"
-                        >
-                            <SelectValue placeholder="Last 30 days" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                            <SelectItem value="30" className="rounded-lg">
-                                Last 30 days
-                            </SelectItem>
-                            <SelectItem value="7" className="rounded-lg">
-                                Last 7 days
-                            </SelectItem>
-                        </SelectContent>
-                    </Select>
-                </CardHeader>
-                <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-                    <ChartContainer
-                        config={chartConfig}
-                        className="aspect-auto h-[250px] w-full"
+                  </div>
+                ))
+              ) : recentLeads.length > 0 ? (
+                recentLeads.map((lead, index) => {
+                  const nameParts = lead.full_name.split(" ");
+                  const initials = (nameParts[0]?.[0] ?? "") + (nameParts[1]?.[0] ?? "");
+                  const avatarColor = index === 0 ? "bg-[#2563EB] text-white" : "bg-[#DBEAFE] text-[#1E3A8A]";
+                  const badgeColor = index === 0 ? "bg-[#E0E7FF] text-[#4F46E5]" : index === 1 ? "bg-[#DCFCE7] text-[#16A34A]" : "bg-[#F1F5F9] text-[#475569]";
+                  
+                  return (
+                    <div
+                      key={lead.id}
+                      className="flex items-center gap-4 p-3.5 rounded-lg bg-[#F8FAFC] cursor-pointer hover:bg-[#F1F5F9] transition-colors"
+                      onClick={() => router.push(`/leads/${lead.id}`)}
                     >
-                        {chartData.length > 0 ? (
-                            <AreaChart data={chartData}>
-                                <defs>
-                                    <linearGradient id="fillLeads" x1="0" y1="0" x2="0" y2="1">
-                                        <stop
-                                            offset="5%"
-                                            stopColor="var(--primary)"
-                                            stopOpacity={0.8}
-                                        />
-                                        <stop
-                                            offset="95%"
-                                            stopColor="var(--primary)"
-                                            stopOpacity={0.1}
-                                        />
-                                    </linearGradient>
-                                </defs>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                                <XAxis
-                                    dataKey="date"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    minTickGap={32}
-                                    tickFormatter={(value) => {
-                                        const date = new Date(value);
-                                        return date.toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                        });
-                                    }}
-                                />
-                                <YAxis
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={8}
-                                    tickCount={5}
-                                />
-                                <ChartTooltip
-                                    cursor={false}
-                                    content={
-                                        <ChartTooltipContent
-                                            labelFormatter={(value) => {
-                                                return new Date(value).toLocaleDateString("en-US", {
-                                                    month: "short",
-                                                    day: "numeric",
-                                                });
-                                            }}
-                                            indicator="dot"
-                                        />
-                                    }
-                                />
-                                <Area
-                                    dataKey="count"
-                                    type="monotone"
-                                    fill="url(#fillLeads)"
-                                    stroke="var(--primary)"
-                                    strokeWidth={2}
-                                />
-                            </AreaChart>
-                        ) : (
-                            <div className="flex h-full items-center justify-center">
-                                <p className="text-muted-foreground">Loading chart data...</p>
-                            </div>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${avatarColor}`}>
+                        {initials.toUpperCase() || "?"}
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <p className="text-[14px] font-bold text-[#0F172A] truncate">
+                          {lead.full_name}
+                        </p>
+                        <p className="text-[12px] text-[#64748B] truncate mt-0.5">
+                          Inquiry: {lead.project?.name ?? "General Inquiry"}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <p className="text-[13px] font-bold text-[#0F172A] font-mono">
+                           ${lead.max_budget ? (lead.max_budget / 1000).toFixed(0) + 'k' : '---'}
+                        </p>
+                        {lead.stage && (
+                          <span className={`text-[8px] font-bold px-2 py-[3px] rounded uppercase tracking-widest ${badgeColor}`}>
+                            {typeof lead.stage === "object" ? (lead.stage as { name: string }).name : lead.stage}
+                          </span>
                         )}
-                    </ChartContainer>
-                </CardContent>
-            </Card>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-sm text-[#94A3B8] text-center mt-8">No recent leads</p>
+              )}
+            </div>
+          </div>
+
+          {/* Featured Project */}
+          {featuredProject && (
+            <div className="bg-white rounded-[10px] shadow-sm flex flex-col border border-transparent overflow-hidden" style={{ boxShadow: "0 2px 8px rgba(37,99,235,0.04)" }}>
+              <div className="flex items-center gap-2 px-6 pt-6 pb-2">
+                <h2 className="text-[17px] font-bold text-[#0F172A]">Featured Project</h2>
+              </div>
+              <div className="px-6 flex flex-col flex-1 pb-6 relative">
+                 <div className="relative w-full h-[180px] rounded-lg overflow-hidden bg-gray-100 shrink-0 mt-2">
+                   <div className="absolute right-3 top-3 z-10 px-3 py-1 bg-white backdrop-blur-sm rounded-full shadow-sm">
+                     <span className="text-[10px] font-bold text-[#2563EB] uppercase tracking-widest">FOR SALE</span>
+                   </div>
+                   <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80" alt="Property" className="w-full h-full object-cover" />
+                 </div>
+
+                 <div className="mt-5 space-y-1">
+                    <h3 className="text-[16px] font-bold text-[#0F172A]">
+                      {featuredProject.name}
+                    </h3>
+                    <p className="text-[13px] text-[#64748B]">
+                      {featuredProject.address || "Beverly Hills, CA 90210"}
+                    </p>
+                 </div>
+
+                 <div className="flex items-center mt-6 pt-5 border-t border-[#F1F5F9]">
+                    <div className="flex-1 border-r border-[#F1F5F9]">
+                      <p className="text-[18px] font-bold text-[#0F172A] font-mono leading-none">
+                        12
+                      </p>
+                      <p className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-widest mt-1">
+                        Active Leads
+                      </p>
+                    </div>
+                    <div className="flex-1 pl-4">
+                      <p className="text-[18px] font-bold text-[#0F172A] font-mono leading-none">
+                        {featuredProject.price ? `$${(featuredProject.price / 1000000).toFixed(1)}M` : "$---"}
+                      </p>
+                      <p className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-widest mt-1">
+                        Target Price
+                      </p>
+                    </div>
+                 </div>
+
+                 <button
+                    onClick={() => router.push(`/projects/${featuredProject.id}`)}
+                    className="w-full mt-6 bg-[#F1F5F8] hover:bg-[#E2E8F0] text-[#0F172A] text-[13px] font-bold py-3 rounded-md transition-colors"
+                 >
+                    Manage Project
+                 </button>
+              </div>
+            </div>
+          )}
         </div>
-    );
+
+      </div>
+    </div>
+  );
 }
