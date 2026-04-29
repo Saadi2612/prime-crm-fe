@@ -37,7 +37,7 @@ const mainNavItems: NavItem[] = [
     { title: "Follow Ups", href: "/follow-ups", icon: Bell },
     { title: "Leads",      href: "/leads",       icon: Users },
     { title: "Projects",   href: "/projects",    icon: Building2 },
-    { title: "Settings",   href: "/settings",    icon: Settings },
+    { title: "Settings",   href: "/settings",    icon: Settings,  adminOnly: true },
 ];
 
 const adminNavItems: NavItem[] = [
@@ -206,6 +206,7 @@ export function AppSidebar() {
             {/* ── Main Nav ───────────────────────────────────────── */}
             <nav className="flex-1 px-3 flex flex-col gap-0.5 overflow-y-auto overflow-x-hidden">
                 {mainNavItems.map((item) => {
+                    if (item.adminOnly && !isAdmin) return null;
                     if (item.title === "Dashboard" && user?.role === "agent") return null;
                     const active = item.href === "/dashboard"
                         ? pathname === "/dashboard"

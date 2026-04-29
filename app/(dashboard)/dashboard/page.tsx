@@ -11,10 +11,9 @@ import {
   Project,
 } from "@/lib/api";
 import type { Lead } from "@/types/leads";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Users, Zap, ShieldCheck, CalendarDays, ArrowUpRight, MapPin, TrendingUp, Building2 } from "lucide-react";
+import { Users, Zap, ShieldCheck, CalendarDays } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 
@@ -39,39 +38,41 @@ function StatCard({
   icon: React.ElementType;
   pillText?: string;
   pillVariant?: "white" | "solid";
-  color?: "blue" | "cyan" | "green" | "purple";
+  color?: "blue" | "cyan" | "green" | "indigo";
   loading?: boolean;
 }) {
   const styles = {
     blue: {
-      bg: "bg-[#F4F8FE]",
+      bg: "bg-[#EFF6FF]",
       text: "text-[#2563EB]",
       pillSolid: "bg-[#2563EB] text-white",
     },
     cyan: {
-      bg: "bg-[#F0FAFD]",
-      text: "text-[#0EA5E9]",
-      pillSolid: "bg-[#0EA5E9] text-white",
+      bg: "bg-[#F0F9FF]",
+      text: "text-[#0284C7]",
+      pillSolid: "bg-[#0284C7] text-white",
     },
     green: {
-      bg: "bg-[#F0FDF4]",
-      text: "text-[#10B981]",
-      pillSolid: "bg-[#10B981] text-white",
+      bg: "bg-[#ECFDF5]",
+      text: "text-[#059669]",
+      pillSolid: "bg-[#059669] text-white",
     },
-    purple: {
-      bg: "bg-[#F8F5FF]",
-      text: "text-[#8B5CF6]",
-      pillSolid: "bg-[#8B5CF6] text-white",
+    indigo: {
+      bg: "bg-[#EEF2FF]",
+      text: "text-[#4338CA]",
+      pillSolid: "bg-[#4338CA] text-white",
     },
   }[color];
 
   return (
-    <div className={`rounded-[10px] p-6 flex flex-col justify-between h-[150px] ${styles.bg}`}>
-      <div className="flex items-start justify-between">
-        <Icon className={`w-5 h-5 ${styles.text}`} />
+    <div className={`rounded-xl p-6 flex flex-col transition-transform hover:-translate-y-1 ${styles.bg}`}>
+      <div className="flex items-start justify-between mb-4">
+        <div className="bg-white p-2 rounded-lg shadow-sm inline-flex items-center justify-center">
+          <Icon className={`w-5 h-5 ${styles.text}`} />
+        </div>
         {pillText && (
           <span
-            className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+            className={`text-[10px] font-bold px-2 py-1 rounded-full ${
               pillVariant === "solid" ? styles.pillSolid : `bg-white ${styles.text}`
             }`}
           >
@@ -86,11 +87,11 @@ function StatCard({
           <div className="h-8 w-16 bg-white/50 rounded animate-pulse" />
         </div>
       ) : (
-        <div className="space-y-0.5">
-          <p className={`text-[10px] uppercase font-bold tracking-widest ${styles.text}`}>
+        <div className="space-y-1">
+          <p className={`text-[11px] uppercase font-bold tracking-widest ${styles.text}`}>
             {label}
           </p>
-          <p className={`text-[36px] leading-none font-bold ${styles.text}`} style={{ letterSpacing: "-1px" }}>
+          <p className={`text-3xl font-medium font-mono ${styles.text}`}>
             {value}
           </p>
         </div>
@@ -101,11 +102,14 @@ function StatCard({
 
 function SkeletonCard() {
   return (
-    <div className="bg-[#f8fafc] rounded-[10px] p-6 h-[150px] flex flex-col justify-between">
-      <div className="w-5 h-5 rounded bg-gray-200 animate-pulse" />
+    <div className="bg-[#EFF6FF] rounded-xl p-6 flex flex-col">
+      <div className="flex justify-between items-start mb-4">
+        <div className="w-9 h-9 rounded-lg bg-white/60 animate-pulse" />
+        <div className="w-10 h-5 rounded-full bg-white/60 animate-pulse" />
+      </div>
       <div className="space-y-2">
-        <div className="h-3 w-20 bg-gray-200 rounded animate-pulse" />
-        <div className="h-8 w-16 bg-gray-200 rounded animate-pulse" />
+        <div className="h-3 w-20 bg-white/60 rounded animate-pulse" />
+        <div className="h-8 w-16 bg-white/60 rounded animate-pulse" />
       </div>
     </div>
   );
@@ -118,7 +122,7 @@ export default function DashboardPage() {
   const [chartData, setChartData] = useState<DashboardChartData[]>([]);
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [featuredProject, setFeaturedProject] = useState<Project | null>(null);
-  const [days, setDays] = useState<"7" | "30">("30");
+  const [days, setDays] = useState<"7" | "30" | "365">("30");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -193,7 +197,7 @@ export default function DashboardPage() {
               <StatCard label="Total Leads" value={stats.total_leads} icon={Users} color="blue" pillText="+12%" pillVariant="white" loading={false} />
               <StatCard label="Active Leads" value={stats.active_leads} icon={Zap} color="cyan" pillText="+4.5%" pillVariant="white" loading={false} />
               <StatCard label="Qualified Leads" value={stats.qualified_leads} icon={ShieldCheck} color="green" pillText="New" pillVariant="white" loading={false} />
-              <StatCard label="Follow-ups Today" value={stats.follow_ups_today} icon={CalendarDays} color="purple" pillText="Urgent" pillVariant="solid" loading={false} />
+              <StatCard label="Follow-ups Today" value={stats.follow_ups_today} icon={CalendarDays} color="indigo" pillText="Urgent" pillVariant="solid" loading={false} />
             </>
           ) : null}
         </div>
@@ -204,21 +208,21 @@ export default function DashboardPage() {
             <div>
               <h2 className="text-[17px] font-bold text-[#0F172A]">Total Leads</h2>
               <p className="text-[13px] text-[#94A3B8] mt-1 -tracking-wide">
-                Lead generation over the last 30 days
+                Lead generation over the last {days === "7" ? "7 days" : days === "30" ? "30 days" : "year"}
               </p>
             </div>
-            <div className="flex bg-[#F1F5F9] rounded-md p-1 mt-1">
-              {["Day", "Month", "Year"].map((opt) => (
+            <div className="flex gap-2 mt-1">
+              {([["Week", "7"], ["Month", "30"], ["Year", "365"]] as const).map(([label, value]) => (
                 <button
-                  key={opt}
-                  onClick={() => {}}
-                  className={`px-3.5 py-1 text-[11px] font-semibold rounded transition-colors ${
-                    opt === "Month"
-                      ? "bg-[#2563EB] text-white shadow-sm"
-                      : "text-[#64748B] hover:text-[#0F172A]"
+                  key={label}
+                  onClick={() => setDays(value)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                    days === value
+                      ? "bg-[#2563EB] text-white"
+                      : "bg-[#EFF4F8] text-[#64748B] hover:text-[#0F172A]"
                   }`}
                 >
-                  {opt}
+                  {label}
                 </button>
               ))}
             </div>
@@ -307,8 +311,10 @@ export default function DashboardPage() {
                 recentLeads.map((lead, index) => {
                   const nameParts = lead.full_name.split(" ");
                   const initials = (nameParts[0]?.[0] ?? "") + (nameParts[1]?.[0] ?? "");
-                  const avatarColor = index === 0 ? "bg-[#2563EB] text-white" : "bg-[#DBEAFE] text-[#1E3A8A]";
-                  const badgeColor = index === 0 ? "bg-[#E0E7FF] text-[#4F46E5]" : index === 1 ? "bg-[#DCFCE7] text-[#16A34A]" : "bg-[#F1F5F9] text-[#475569]";
+                  const avatarColors = ["bg-[#2563EB] text-white", "bg-[#DBEAFE] text-[#1E3A8A]", "bg-[#E2E8F0] text-[#475569]"];
+                  const avatarColor = avatarColors[index % avatarColors.length];
+                  const stageName = typeof lead.stage === "object" ? (lead.stage as { name: string }).name.toLowerCase() : String(lead.stage ?? "").toLowerCase();
+                  const badgeColor = stageName.includes("qualif") ? "bg-blue-100 text-blue-600" : stageName.includes("negotiat") ? "bg-emerald-100 text-emerald-600" : stageName.includes("close") || stageName.includes("won") ? "bg-green-100 text-green-700" : stageName.includes("lost") ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-600";
                   
                   return (
                     <div
@@ -369,8 +375,8 @@ export default function DashboardPage() {
                     </p>
                  </div>
 
-                 <div className="flex items-center mt-6 pt-5 border-t border-[#F1F5F9]">
-                    <div className="flex-1 border-r border-[#F1F5F9]">
+                 <div className="flex items-center justify-between mt-6 pt-5 border-t border-[#F1F5F9]">
+                    <div className="flex-1 text-center">
                       <p className="text-[18px] font-bold text-[#0F172A] font-mono leading-none">
                         12
                       </p>
@@ -378,7 +384,8 @@ export default function DashboardPage() {
                         Active Leads
                       </p>
                     </div>
-                    <div className="flex-1 pl-4">
+                    <div className="w-px h-8 bg-[#F1F5F9]" />
+                    <div className="flex-1 text-center">
                       <p className="text-[18px] font-bold text-[#0F172A] font-mono leading-none">
                         {featuredProject.price ? `$${(featuredProject.price / 1000000).toFixed(1)}M` : "$---"}
                       </p>

@@ -159,37 +159,41 @@ export default function LeadDetailPage() {
     // ── Loading ────────────────────────────────────────────────────────────────
     if (loading) {
         return (
-            <div className="max-w-5xl space-y-5">
-                <div className="flex items-center justify-between">
-                    <Skeleton className="h-8 w-32" />
-                    <Skeleton className="h-8 w-40" />
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
-                    <div className="flex items-center gap-4">
-                        <Skeleton className="h-16 w-16 rounded-2xl" />
-                        <div className="space-y-2">
-                            <Skeleton className="h-6 w-48" />
-                            <Skeleton className="h-4 w-28" />
+            <div className="flex-1 min-h-full" style={{ background: "#EFF3F8" }}>
+                <div className="px-8 py-7">
+                    <div className="max-w-5xl mx-auto space-y-5">
+                        <div className="flex items-center justify-between">
+                            <Skeleton className="h-8 w-32" />
+                            <Skeleton className="h-8 w-40" />
+                        </div>
+                        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+                            <div className="flex items-center gap-4">
+                                <Skeleton className="h-16 w-16 rounded-2xl" />
+                                <div className="space-y-2">
+                                    <Skeleton className="h-6 w-48" />
+                                    <Skeleton className="h-4 w-28" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
+                            <Skeleton className="h-5 w-32" />
+                            <div className="flex gap-2 flex-wrap">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                    <Skeleton key={i} className="h-9 w-28 rounded-full" />
+                                ))}
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            {[0, 1].map((i) => (
+                                <div key={i} className="rounded-2xl border border-border bg-card p-6 space-y-3">
+                                    <Skeleton className="h-5 w-28" />
+                                    <Skeleton className="h-4 w-40" />
+                                    <Skeleton className="h-4 w-32" />
+                                    <Skeleton className="h-4 w-36" />
+                                </div>
+                            ))}
                         </div>
                     </div>
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-6 space-y-3">
-                    <Skeleton className="h-5 w-32" />
-                    <div className="flex gap-2 flex-wrap">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                            <Skeleton key={i} className="h-9 w-28 rounded-full" />
-                        ))}
-                    </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    {[0, 1].map((i) => (
-                        <div key={i} className="rounded-2xl border border-border bg-card p-6 space-y-3">
-                            <Skeleton className="h-5 w-28" />
-                            <Skeleton className="h-4 w-40" />
-                            <Skeleton className="h-4 w-32" />
-                            <Skeleton className="h-4 w-36" />
-                        </div>
-                    ))}
                 </div>
             </div>
         );
@@ -198,10 +202,14 @@ export default function LeadDetailPage() {
     // ── Error ──────────────────────────────────────────────────────────────────
     if (error && !lead) {
         return (
-            <div className="max-w-5xl">
-                <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center">
-                    <p className="text-destructive font-medium">{error}</p>
-                    <Button variant="outline" size="sm" className="mt-4" onClick={load}>Try again</Button>
+            <div className="flex-1 min-h-full" style={{ background: "#EFF3F8" }}>
+                <div className="px-8 py-7">
+                    <div className="max-w-5xl mx-auto">
+                        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+                            <p className="text-destructive font-medium">{error}</p>
+                            <Button variant="outline" size="sm" className="mt-4" onClick={load}>Try again</Button>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -215,7 +223,9 @@ export default function LeadDetailPage() {
     const inits = initials(lead.full_name);
 
     return (
-        <div className="max-w-5xl space-y-4">
+        <div className="flex-1 min-h-full" style={{ background: "#EFF3F8" }}>
+        <div className="px-8 py-7">
+        <div className="max-w-5xl mx-auto space-y-4">
             {/* ── Dialogs ───────────────────────────────────────────────── */}
             <EditLeadDialog
                 open={editOpen}
@@ -662,6 +672,8 @@ export default function LeadDetailPage() {
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
         </div>
     );
 }
