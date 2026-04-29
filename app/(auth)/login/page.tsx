@@ -112,6 +112,13 @@ export default function LoginPage() {
                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isPending ? "Signing in…" : "Sign in"}
                     </Button>
+
+                    <p className="text-center text-sm text-muted-foreground pt-1">
+                        New agency?{" "}
+                        <Link href="/register" className="font-medium text-primary hover:underline">
+                            Create your workspace
+                        </Link>
+                    </p>
                 </form>
             </CardContent>
         </Card>

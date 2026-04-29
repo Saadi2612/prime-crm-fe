@@ -15,6 +15,14 @@ const routeTabs: Record<string, { label: string; href: string }[]> = {
         { label: "Kanban", href: "/leads" },
         { label: "List", href: "/leads/list" },
     ],
+    "/projects": [
+        { label: "Overview", href: "/projects" },
+        { label: "Pipeline", href: "/projects/pipeline" },
+        { label: "Reports", href: "/projects/reports" },
+    ],
+    "/settings": [
+        { label: "Integrations", href: "/settings/integrations" },
+    ],
 };
 
 function getTabsForPath(pathname: string) {
@@ -81,10 +89,16 @@ function TopHeader({ pathname, router }: { pathname: string; router: ReturnType<
                     <Bell className="w-4.5 h-4.5" />
                 </button>
                 <button
-                    onClick={() => router.push("/leads?action=new")}
+                    onClick={() => {
+                        if (pathname.startsWith("/projects")) {
+                            router.push("/projects?action=new");
+                        } else {
+                            router.push("/leads?action=new");
+                        }
+                    }}
                     className="flex items-center justify-center bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-medium px-4 py-1.5 rounded-md transition-all duration-150"
                 >
-                    Add Lead
+                    {pathname.startsWith("/projects") ? "+ Add Project" : "Add Lead"}
                 </button>
             </div>
         </header>

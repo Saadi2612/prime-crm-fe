@@ -14,6 +14,20 @@ const STATUS_MESSAGES: Record<number, string> = {
   503: "Service unavailable. Please try again later.",
 };
 
+function getPublicBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    if (hostname.includes("localhost")) {
+      return `${protocol}//localhost:8000`;
+    }
+    // Strip tenant subdomain — use root api domain
+    const parts = hostname.split(".");
+    const rootDomain = parts.slice(-2).join(".");
+    return `${protocol}//api.${rootDomain}`;
+  }
+  return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+}
+
 function getBaseUrl(): string {
   if (typeof window !== "undefined") {
     const { protocol, hostname } = window.location;
@@ -205,7 +219,8 @@ export async function resetPassword(
 // ── Lead Stages ───────────────────────────────────────────────────────────────
 
 export async function fetchStages(): Promise<Stage[]> {
-  return apiFetch<Stage[]>("/leads/stages/");
+  const data = await apiFetch<Stage[] | { results: Stage[] }>("/leads/stages/");
+  return Array.isArray(data) ? data : data.results;
 }
 
 // ── Leads ─────────────────────────────────────────────────────────────────────
@@ -219,7 +234,28 @@ export async function fetchLeads(params?: LeadsQueryParams): Promise<Lead[]> {
   if (params?.assigned_to) query.set("assigned_to", params.assigned_to);
   if (params?.is_paginated === false) query.set("is_paginated", "false");
   const qs = query.toString();
-  return apiFetch<Lead[]>(`/leads/${qs ? `?${qs}` : ""}`);
+  const data = await apiFetch<Lead[] | { results: Lead[] }>(`/leads/${qs ? `?${qs}` : ""}`);
+  return Array.isArray(data) ? data : data.results;
+}
+
+export interface PaginatedLeads {
+  results: Lead[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
+
+export async function fetchLeadsPaginated(params?: Omit<LeadsQueryParams, "is_paginated">): Promise<PaginatedLeads> {
+  const query = new URLSearchParams();
+  if (params?.stage) query.set("stage", params.stage);
+  if (params?.search) query.set("search", params.search);
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.page_size) query.set("page_size", String(params.page_size));
+  if (params?.assigned_to) query.set("assigned_to", params.assigned_to);
+  const qs = query.toString();
+  const data = await apiFetch<PaginatedLeads | Lead[]>(`/leads/${qs ? `?${qs}` : ""}`);
+  if (Array.isArray(data)) return { results: data, count: data.length, next: null, previous: null };
+  return data;
 }
 
 export async function createLead(data: Partial<Lead>): Promise<Lead> {
@@ -244,8 +280,10 @@ export async function fetchLead(id: string): Promise<Lead> {
 }
 
 /** Fetch all leads that have no assigned user. Admin/manager only. */
-export async function fetchUnassignedLeads(): Promise<Lead[]> {
-  return apiFetch<Lead[]>("/leads/unassigned/");
+export async function fetchUnassignedLeads(page = 1): Promise<{ results: Lead[]; count: number }> {
+  const data = await apiFetch<{ results: Lead[]; count: number } | Lead[]>(`/leads/unassigned/?page=${page}`);
+  if (Array.isArray(data)) return { results: data, count: data.length };
+  return { results: data.results, count: data.count };
 }
 
 export async function deleteLead(id: string): Promise<void> {
@@ -260,7 +298,8 @@ export async function updateLead(id: string, data: Partial<Lead>): Promise<Lead>
 }
 
 export async function fetchLeadNotes(leadId: string): Promise<LeadNote[]> {
-  return apiFetch<LeadNote[]>(`/leads/${leadId}/notes/`);
+  const data = await apiFetch<LeadNote[] | { results: LeadNote[] }>(`/leads/${leadId}/notes/`);
+  return Array.isArray(data) ? data : data.results;
 }
 
 export async function createLeadNote(
@@ -443,4 +482,72 @@ export async function resendInvitation(id: string): Promise<{ detail: string }> 
   return apiFetch<{ detail: string }>(`/auth/invitations/${id}/resend/`, {
     method: "POST",
   });
+}
+
+// ── Tenant Registration ───────────────────────────────────────────────────────
+
+export interface RegisterAgencyPayload {
+  agency_name: string;
+  subdomain: string;
+  admin_email: string;
+  admin_password: string;
+}
+
+export interface RegisterAgencyResponse {
+  detail: string;
+  agency_name: string;
+  subdomain: string;
+  workspace_url: string;
+}
+
+export async function registerAgency(
+  payload: RegisterAgencyPayload
+): Promise<RegisterAgencyResponse> {
+  const res = await fetch(
+    `${getPublicBaseUrl()}/api/tenants/register/`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!res.ok) {
+    let message = STATUS_MESSAGES[res.status] ?? `Unexpected error (${res.status})`;
+    try {
+      const body = await res.json();
+      if (typeof body === "object" && body !== null) {
+        const firstValue = Object.values(body)[0];
+        if (Array.isArray(firstValue) && typeof firstValue[0] === "string") {
+          message = firstValue[0];
+        } else if (typeof body.detail === "string") {
+          message = body.detail;
+        }
+      }
+    } catch { /* ignore */ }
+    throw new Error(message);
+  }
+
+  return res.json() as Promise<RegisterAgencyResponse>;
+}
+
+// ── Meta / Facebook Integration ───────────────────────────────────────────────
+
+export interface MetaPage {
+  id: string;
+  name: string;
+  error: string;
+}
+
+export interface MetaStatus {
+  connected: boolean;
+  pages: MetaPage[];
+}
+
+export async function fetchMetaStatus(): Promise<MetaStatus> {
+  return apiFetch<MetaStatus>("/meta/status/");
+}
+
+export async function initiateMetaOAuth(): Promise<{ url: string }> {
+  return apiFetch<{ url: string }>("/meta/oauth/initiate/");
 }

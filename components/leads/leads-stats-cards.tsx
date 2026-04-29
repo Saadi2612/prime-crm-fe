@@ -2,19 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { fetchDashboardStats, fetchStages, DashboardStats } from "@/lib/api";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Stage } from "@/types/leads";
-import { FileText } from "lucide-react";
 
-// Icons mapping depending on stage name
-import { Target, Search, Handshake, CheckCircle2, XCircle, BarChart2 } from "lucide-react";
-
-const STAGE_ICONS: Record<string, React.ElementType> = {
-    new: Target,
-    contacted: Search,
-    negotiation: Handshake,
-    qualified: CheckCircle2,
-    lost: XCircle,
+const STAGE_STYLES: Record<string, { bg: string; titleText: string; numText: string }> = {
+    total: { bg: "bg-[#EFF6FF]", titleText: "text-[#2563eb]", numText: "text-[#1e40af]" },
+    new: { bg: "bg-[#F0F9FF]", titleText: "text-[#0369a1]", numText: "text-[#0c4a6e]" },
+    contacted: { bg: "bg-[#EEF2FF]", titleText: "text-[#4338ca]", numText: "text-[#312e81]" },
+    pipeline: { bg: "bg-[#ECFEFF]", titleText: "text-[#0e7490]", numText: "text-[#164e63]" },
+    qualified: { bg: "bg-[#ECFDF5]", titleText: "text-[#047857]", numText: "text-[#064e3b]" },
+    unqualified: { bg: "bg-[#FFF1F2]", titleText: "text-[#be123c]", numText: "text-[#881337]" },
 };
 
 export function LeadsStatsCards() {
@@ -41,50 +37,42 @@ export function LeadsStatsCards() {
         loadData();
     }, []);
 
-    if (loading) {
+    if (loading || !stats) {
         return (
-            <div className="grid gap-4 md:grid-cols-3 lg:flex lg:flex-wrap mb-6">
-                {[...Array(5)].map((_, i) => (
-                    <Card key={i} className="animate-pulse lg:flex-1 min-w-[180px]">
-                        <CardHeader className="h-[90px]" />
-                    </Card>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} className="animate-pulse bg-slate-100 p-5 rounded-xl h-[88px]" />
                 ))}
             </div>
         );
     }
 
-    if (!stats) return null;
+    const tStyle = STAGE_STYLES.total;
 
     return (
-        <div className="grid gap-4 md:grid-cols-3 lg:flex lg:flex-wrap mb-6">
-            <Card className="lg:flex-1 min-w-[180px]">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                    <BarChart2 className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">
-                        {stats.total_leads}
-                    </div>
-                </CardContent>
-            </Card>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+            {/* Total Leads Card */}
+            <div className={`${tStyle.bg} p-5 rounded-xl transition-all hover:scale-[1.02]`}>
+                <p className={`${tStyle.titleText} text-[0.6875rem] font-bold uppercase tracking-wider mb-1`}>Total</p>
+                <p className={`font-mono text-2xl font-semibold ${tStyle.numText}`}>
+                    {stats.total_leads}
+                </p>
+            </div>
 
+            {/* Stage Cards */}
             {stages.map((stage) => {
                 const stageName = stage.name.toLowerCase();
-                const Icon = STAGE_ICONS[stageName] || FileText;
+                const style = STAGE_STYLES[stageName] || { bg: "bg-slate-50", titleText: "text-slate-600", numText: "text-slate-900" };
 
                 return (
-                    <Card key={stage.id} className="lg:flex-1 min-w-[180px]">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium capitalize">{stage.name}</CardTitle>
-                            <Icon className="h-4 w-4 text-muted-foreground" />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">
-                                {stats.stage_counts?.[stageName] ?? 0}
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div key={stage.id} className={`${style.bg} p-5 rounded-xl transition-all hover:scale-[1.02]`}>
+                        <p className={`${style.titleText} text-[0.6875rem] font-bold uppercase tracking-wider mb-1 truncate`}>
+                            {stage.name}
+                        </p>
+                        <p className={`font-mono text-2xl font-semibold ${style.numText}`}>
+                            {stats.stage_counts?.[stageName] ?? 0}
+                        </p>
+                    </div>
                 );
             })}
         </div>
