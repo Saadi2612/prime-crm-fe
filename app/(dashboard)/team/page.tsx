@@ -103,7 +103,13 @@ export default function TeamPage() {
     };
 
     useEffect(() => {
-        loadData();
+        Promise.all([fetchTeamMembers(), fetchPendingInvitations()])
+            .then(([membersData, pendingData]) => {
+                setMembers(membersData);
+                setPendingInvites(pendingData);
+            })
+            .catch((e: unknown) => setError(e instanceof Error ? e.message : "Failed to load team data"))
+            .finally(() => setIsLoading(false));
     }, []);
 
     const handleInvite = (e: React.FormEvent) => {
@@ -118,8 +124,8 @@ export default function TeamPage() {
                 setPhone("");
                 setRole("agent");
                 loadData(); // Refresh the lists after successful invite
-            } catch (err: any) {
-                toast.error(err.message || "Failed to send invitation.");
+            } catch (err: unknown) {
+                toast.error(err instanceof Error ? err.message : "Failed to send invitation.");
             }
         });
     };
@@ -131,8 +137,8 @@ export default function TeamPage() {
             const res = await resendInvitation(id);
             toast.success(res.detail || "Invitation resent.");
             loadData();
-        } catch (err: any) {
-            toast.error(err.message || "Failed to resend invitation.");
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "Failed to resend invitation.");
         }
     };
 
@@ -141,13 +147,13 @@ export default function TeamPage() {
             await deleteInvitation(id);
             toast.success("Pending invitation deleted.");
             loadData();
-        } catch (err: any) {
-            toast.error(err.message || "Failed to delete invitation.");
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete invitation.");
         }
     };
 
     return (
-        <div className="flex flex-col h-full max-w-5xl mx-auto w-full px-8 py-7">
+        <div className="flex flex-col h-full w-full px-8 py-7">
             <div className="flex items-start justify-between mb-6">
                 <div>
                     <div className="flex items-center gap-3">
@@ -262,7 +268,7 @@ export default function TeamPage() {
             )}
 
             {/* Tabbed View for Members and Pending Invitations */}
-            <Tabs defaultValue="active" className="w-full">
+            <Tabs defaultValue="active" className="w-full pb-7">
                 <TabsList className="mb-4">
                     <TabsTrigger value="active">
                         Active Members ({members.length})
