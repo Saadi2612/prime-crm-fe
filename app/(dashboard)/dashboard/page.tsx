@@ -13,7 +13,7 @@ import {
 import type { Lead } from "@/types/leads";
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { Users, Zap, ShieldCheck, CalendarDays } from "lucide-react";
+import { Users, Zap, ShieldCheck, CalendarDays, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 
@@ -171,14 +171,17 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 min-h-full bg-background pb-12">
-      <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+      <div className="mx-auto px-8 py-7 space-y-8">
 
         {/* ── Page header ────────────────────────────────────────── */}
         <div>
-          <h1 className="text-[28px] font-bold text-[#0F172A] leading-tight">
-            Dashboard
-          </h1>
-          <p className="text-[#64748B] text-[13px] mt-1 -tracking-wide">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 text-primary rounded-lg">
+              <LayoutDashboard className="h-6 w-6" />
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          </div>
+          <p className="text-[#64748B] text-[13px] mt-1 ml-14">
             Welcome back to PropFlow CRM
           </p>
         </div>

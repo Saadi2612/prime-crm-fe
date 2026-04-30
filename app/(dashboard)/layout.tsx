@@ -13,7 +13,7 @@ const routeTabs: Record<string, { label: string; href: string }[]> = {
     ],
     "/leads": [
         { label: "Kanban", href: "/leads" },
-        { label: "List", href: "/leads/list" },
+        { label: "List", href: "/leads" },
     ],
     "/projects": [
         { label: "Overview", href: "/projects" },
