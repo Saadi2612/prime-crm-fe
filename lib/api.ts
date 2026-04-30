@@ -218,9 +218,15 @@ export async function resetPassword(
 
 // ── Lead Stages ───────────────────────────────────────────────────────────────
 
-export async function fetchStages(): Promise<Stage[]> {
-  const data = await apiFetch<Stage[] | { results: Stage[] }>("/leads/stages/");
-  return Array.isArray(data) ? data : data.results;
+let _stagesPromise: Promise<Stage[]> | null = null;
+
+export function fetchStages(): Promise<Stage[]> {
+  if (!_stagesPromise) {
+    _stagesPromise = apiFetch<Stage[] | { results: Stage[] }>("/leads/stages/")
+      .then((data) => (Array.isArray(data) ? data : data.results))
+      .finally(() => { _stagesPromise = null; });
+  }
+  return _stagesPromise;
 }
 
 // ── Leads ─────────────────────────────────────────────────────────────────────

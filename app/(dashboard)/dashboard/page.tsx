@@ -123,7 +123,8 @@ export default function DashboardPage() {
   const [recentLeads, setRecentLeads] = useState<Lead[]>([]);
   const [featuredProject, setFeaturedProject] = useState<Project | null>(null);
   const [days, setDays] = useState<"7" | "30" | "365">("30");
-  const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [leadsLoading, setLeadsLoading] = useState(true);
 
   useEffect(() => {
     if (!authLoading && user?.role === "agent") {
@@ -134,28 +135,29 @@ export default function DashboardPage() {
   useEffect(() => {
     if (authLoading || user?.role === "agent") return;
 
-    async function loadData() {
-      setLoading(true);
-      try {
-        const [statsData, chartResponse, leadsData, projectsData] = await Promise.all([
-          fetchDashboardStats(),
-          fetchDashboardChart(parseInt(days)),
-          fetchLeads({ page_size: 3, is_paginated: false }),
-          fetchProjects(),
-        ]);
-        setStats(statsData);
-        setChartData(chartResponse);
-        const leads = Array.isArray(leadsData) ? leadsData : (leadsData as { results?: Lead[] }).results ?? [];
+    fetchDashboardStats()
+      .then(setStats)
+      .catch((e) => console.error("Failed to load stats:", e))
+      .finally(() => setStatsLoading(false));
+
+    fetchDashboardChart(parseInt(days))
+      .then(setChartData)
+      .catch((e) => console.error("Failed to load chart:", e));
+
+    fetchLeads({ page_size: 3, is_paginated: false })
+      .then((data) => {
+        const leads = Array.isArray(data) ? data : (data as { results?: Lead[] }).results ?? [];
         setRecentLeads(leads.slice(0, 3));
-        const projects = Array.isArray(projectsData) ? projectsData : [];
+      })
+      .catch((e) => console.error("Failed to load leads:", e))
+      .finally(() => setLeadsLoading(false));
+
+    fetchProjects()
+      .then((data) => {
+        const projects = Array.isArray(data) ? data : [];
         setFeaturedProject(projects[0] ?? null);
-      } catch (error) {
-        console.error("Failed to load dashboard data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadData();
+      })
+      .catch((e) => console.error("Failed to load projects:", e));
   }, [days, authLoading, user]);
 
   if (authLoading || user?.role === "agent") {
@@ -188,7 +190,7 @@ export default function DashboardPage() {
 
         {/* ── KPI Cards ──────────────────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-          {loading ? (
+          {statsLoading ? (
             <>
               <SkeletonCard />
               <SkeletonCard />
@@ -300,7 +302,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="flex flex-col gap-3 flex-1">
-              {loading ? (
+              {leadsLoading ? (
                 [...Array(3)].map((_, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 bg-[#F8FAFC] rounded-lg">
                     <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse shrink-0" />
