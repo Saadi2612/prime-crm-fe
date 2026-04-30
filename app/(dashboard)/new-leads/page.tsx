@@ -90,17 +90,16 @@ export default function NewLeadsPage() {
                 {/* Page header */}
                 <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
                     <div className="space-y-1">
-                        <div className="flex items-center gap-2.5 text-primary mb-2">
-                            <div className="bg-primary/10 p-2 rounded-xl">
-                                <Inbox className="h-4 w-4 text-primary" />
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                                <Inbox className="h-6 w-6" />
                             </div>
-                            <span className="text-xs font-bold tracking-widest uppercase text-primary">Lead Management</span>
+                            <h1 className="text-3xl font-bold tracking-tight">New Leads</h1>
                         </div>
-                        <h1 className="text-3xl font-bold text-foreground tracking-tight">New Leads</h1>
                         {isLoading ? (
-                            <Skeleton className="h-5 w-56 mt-1" />
+                            <Skeleton className="h-5 w-56 mt-1 ml-14" />
                         ) : (
-                            <p className="text-muted-foreground font-medium">
+                            <p className="text-muted-foreground font-medium ml-14">
                                 {totalCount} unassigned lead{totalCount !== 1 ? "s" : ""} waiting in the queue
                             </p>
                         )}

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
     GripVertical, AlertTriangle, LayoutGrid, List, LogIn,
     Plus, RefreshCw, Search, ExternalLink,
-    FileText, Loader2, User,
+    FileText, Loader2, User, Users,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -584,10 +584,13 @@ export function KanbanBoardView() {
                 {/* ── Page Header ──────────────────────────────────────────────── */}
                 <div className="flex justify-between items-end mb-8">
                     <div>
-                        <h1 className="text-[2.5rem] font-bold text-slate-900 tracking-tight leading-tight">
-                            Leads
-                        </h1>
-                        <p className="text-slate-500 font-medium mt-1 text-sm">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                                <Users className="h-6 w-6" />
+                            </div>
+                            <h1 className="text-3xl font-bold tracking-tight">Leads</h1>
+                        </div>
+                        <p className="text-slate-500 font-medium mt-1 text-sm ml-14">
                             {anyLoading
                                 ? "Loading..."
                                 : `${totalLeads} leads found in the current pipeline.`}

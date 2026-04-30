@@ -310,13 +310,18 @@ function ProjectsPageInner() {
             </AlertDialog>
 
             <div className="flex flex-col min-h-full bg-[#F8FAFC]">
-                <div className="flex-1 max-w-6xl mx-auto w-full px-6 py-8 space-y-6">
+                <div className="flex-1 mx-auto w-full px-8 py-7 space-y-6">
 
                     {/* Header */}
                     <div className="flex items-start justify-between">
                         <div>
-                            <h1 className="text-[28px] font-bold text-[#0F172A] leading-tight">Projects</h1>
-                            <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                                    <Building2 className="h-6 w-6" />
+                                </div>
+                                <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 ml-14">
                                 <span className="text-[13px] font-bold text-[#2563EB] bg-[#EFF6FF] px-2 py-0.5 rounded">
                                     {loading ? "--" : projects.length}
                                 </span>

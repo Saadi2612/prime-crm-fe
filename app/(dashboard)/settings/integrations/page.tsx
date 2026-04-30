@@ -4,10 +4,11 @@ import { Suspense, useEffect, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, CheckCircle2, Loader2, RefreshCw } from "lucide-react";
+import { AlertCircle, CheckCircle2, Loader2, RefreshCw, Puzzle, X } from "lucide-react";
 import { fetchMetaStatus, initiateMetaOAuth, type MetaStatus } from "@/lib/api";
 
 // Facebook brand icon (inline SVG — no extra dependency)
@@ -27,6 +28,11 @@ function IntegrationsPageInner() {
   const [status, setStatus] = useState<MetaStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+  const [errorAlert, setErrorAlert] = useState<string | null>(null);
+
+  const ERROR_MESSAGES: Record<string, string> = {
+    no_pages_found: "No Facebook pages found on your account. Make sure you manage at least one page.",
+  };
 
   // Admin guard
   useEffect(() => {
@@ -42,10 +48,10 @@ function IntegrationsPageInner() {
 
     if (connected === "true") {
       toast.success("Facebook pages connected successfully.");
-      // Strip query params from URL
       router.replace("/settings/integrations");
-    } else if (error === "no_pages_found") {
-      toast.error("No Facebook pages found on your account. Make sure you manage at least one page.");
+    } else if (error) {
+      const msg = ERROR_MESSAGES[error] ?? `Connection failed: ${error}`;
+      setErrorAlert(msg);
       router.replace("/settings/integrations");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -89,13 +95,28 @@ function IntegrationsPageInner() {
   if (!user || user.role !== "admin") return null;
 
   return (
-    <div className="p-6 max-w-3xl">
+    <div className="px-8 py-7 max-w-3xl">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-[#0F172A]">Integrations</h1>
-        <p className="text-sm text-[#64748B] mt-1">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-primary/10 text-primary rounded-lg">
+            <Puzzle className="h-6 w-6" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
+        </div>
+        <p className="text-sm text-[#64748B] mt-1 ml-14">
           Connect third-party services to automatically capture leads.
         </p>
       </div>
+
+      {errorAlert && (
+        <Alert variant="destructive" className="mb-6 flex items-start gap-3">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <AlertDescription className="flex-1">{errorAlert}</AlertDescription>
+          <button onClick={() => setErrorAlert(null)} className="shrink-0 opacity-60 hover:opacity-100">
+            <X className="h-4 w-4" />
+          </button>
+        </Alert>
+      )}
 
       <Card className="border-[#E8EDF2]">
         <CardHeader className="pb-4">

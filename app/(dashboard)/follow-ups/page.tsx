@@ -41,11 +41,16 @@ export default function FollowUpsPage() {
   if (loading || !data) {
     return (
       <div className="p-6 space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Follow Ups</h1>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-accent-foreground/20 text-accent-foreground rounded-lg">
+            <Bell className="h-6 w-6" />
+          </div>
+          <h1 className="text-3xl font-bold tracking-tight">Follow Ups</h1>
+        </div>
         <div className="space-y-4">
-          <Skeleton className="h-24 w-full rounded-xl" />
-          <Skeleton className="h-24 w-full rounded-xl" />
-          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl bg-accent-foreground/20" />
+          <Skeleton className="h-24 w-full rounded-xl bg-accent-foreground/20" />
+          <Skeleton className="h-24 w-full rounded-xl bg-accent-foreground/20" />
         </div>
       </div>
     );

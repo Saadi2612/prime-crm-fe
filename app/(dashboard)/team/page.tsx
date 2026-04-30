@@ -51,7 +51,7 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
-import { Mail, Plus, Shield, UserCircle2, Loader2, AlertTriangle, RefreshCw, Clock, Trash2, Send, ChevronRight } from "lucide-react";
+import { Mail, Plus, Shield, UserCircle2, Loader2, AlertTriangle, RefreshCw, Clock, Trash2, Send, ChevronRight, Users } from "lucide-react";
 import Link from "next/link";
 
 // Avatar colours per name hash
@@ -147,14 +147,19 @@ export default function TeamPage() {
     };
 
     return (
-        <div className="flex flex-col h-full max-w-5xl mx-auto w-full">
+        <div className="flex flex-col h-full max-w-5xl mx-auto w-full px-8 py-7">
             <div className="flex items-start justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground">Team Management</h1>
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                            <Users className="h-6 w-6" />
+                        </div>
+                        <h1 className="text-3xl font-bold tracking-tight">Team Management</h1>
+                    </div>
                     {isLoading ? (
-                        <Skeleton className="h-4 w-40 mt-1" />
+                        <Skeleton className="h-4 w-40 mt-1 ml-14" />
                     ) : (
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className="text-sm text-muted-foreground mt-0.5 ml-14">
                             {members.length} team member{members.length !== 1 ? "s" : ""}
                         </p>
                     )}

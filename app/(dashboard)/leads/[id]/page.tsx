@@ -161,7 +161,7 @@ export default function LeadDetailPage() {
         return (
             <div className="flex-1 min-h-full" style={{ background: "#EFF3F8" }}>
                 <div className="px-8 py-7">
-                    <div className="max-w-5xl mx-auto space-y-5">
+                    <div className="mx-auto space-y-5">
                         <div className="flex items-center justify-between">
                             <Skeleton className="h-8 w-32" />
                             <Skeleton className="h-8 w-40" />
@@ -225,7 +225,7 @@ export default function LeadDetailPage() {
     return (
         <div className="flex-1 min-h-full" style={{ background: "#EFF3F8" }}>
         <div className="px-8 py-7">
-        <div className="max-w-5xl mx-auto space-y-4">
+        <div className="mx-auto space-y-4">
             {/* ── Dialogs ───────────────────────────────────────────────── */}
             <EditLeadDialog
                 open={editOpen}
