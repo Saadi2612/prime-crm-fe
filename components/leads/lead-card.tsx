@@ -137,12 +137,23 @@ export function LeadCard({ lead, onEdit, onDelete, assigneeNode, clickable }: Le
                 </p>
             )}
 
-            {/* Project chip */}
-            {projectName && (
-                <span className="inline-block text-[9px] font-bold uppercase tracking-[0.08em] text-[#94A3B8] bg-[#F1F5F9] rounded-md px-2 py-1">
-                    {projectName}
-                </span>
-            )}
+            {/* Chips row */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+                {lead.is_queued && (
+                    <span
+                        className="inline-block text-[9px] font-bold uppercase tracking-[0.08em] rounded-md px-2 py-1"
+                        style={{ color: "#B45309", backgroundColor: "#FEF3C7" }}
+                        title="Queued for distribution at next office open"
+                    >
+                        Queued
+                    </span>
+                )}
+                {projectName && (
+                    <span className="inline-block text-[9px] font-bold uppercase tracking-[0.08em] text-[#94A3B8] bg-[#F1F5F9] rounded-md px-2 py-1">
+                        {projectName}
+                    </span>
+                )}
+            </div>
         </div>
     );
 }

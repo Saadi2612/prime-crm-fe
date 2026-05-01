@@ -8,6 +8,7 @@ import {
     fetchPendingInvitations,
     resendInvitation,
     deleteInvitation,
+    updateUserAvailability,
     type TeamMember,
     type PendingInvitation,
 } from "@/lib/api";
@@ -51,7 +52,9 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
-import { Mail, Plus, Shield, UserCircle2, Loader2, AlertTriangle, RefreshCw, Clock, Trash2, Send, ChevronRight, Users } from "lucide-react";
+import { Mail, Plus, Shield, UserCircle2, Loader2, AlertTriangle, RefreshCw, Clock, Trash2, Send, Users } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import Link from "next/link";
 
 // Avatar colours per name hash
@@ -131,6 +134,23 @@ export default function TeamPage() {
     };
 
     const canInvite = user?.role === "admin" || user?.role === "manager";
+    const canToggleAvailability = user?.role === "admin" || user?.role === "manager";
+
+    const handleAvailabilityToggle = async (memberId: string, isAvailable: boolean) => {
+        // Optimistic update
+        setMembers((prev) =>
+            prev.map((m) => m.id === memberId ? { ...m, is_available_for_assignment: isAvailable } : m)
+        );
+        try {
+            await updateUserAvailability(memberId, isAvailable);
+        } catch (err) {
+            // Revert on error
+            setMembers((prev) =>
+                prev.map((m) => m.id === memberId ? { ...m, is_available_for_assignment: !isAvailable } : m)
+            );
+            toast.error(err instanceof Error ? err.message : "Failed to update availability.");
+        }
+    };
 
     const handleResend = async (id: string) => {
         try {
@@ -330,6 +350,7 @@ export default function TeamPage() {
                             )}
                         </div>
                     ) : (
+                        <TooltipProvider>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                             {members.map((member) => (
                                 <Link
@@ -359,10 +380,37 @@ export default function TeamPage() {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                                         <Mail className="h-4 w-4 shrink-0" />
                                         <span className="truncate">{member.email}</span>
                                     </div>
+
+                                    {/* Availability toggle — only for agents, visible to admin/manager */}
+                                    {canToggleAvailability && member.role === "agent" && (
+                                        <div
+                                            className="flex items-center justify-between mb-4 px-3 py-2.5 rounded-lg bg-muted/40 border border-border/50"
+                                            onClick={(e) => e.preventDefault()}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                <div className={`h-2 w-2 rounded-full shrink-0 ${member.is_available_for_assignment !== false ? "bg-green-500" : "bg-muted-foreground/40"}`} />
+                                                <span className="text-xs font-medium text-foreground">
+                                                    {member.is_available_for_assignment !== false ? "Available" : "On Leave"}
+                                                </span>
+                                            </div>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Switch
+                                                        checked={member.is_available_for_assignment !== false}
+                                                        onCheckedChange={(v) => handleAvailabilityToggle(member.id, v)}
+                                                        onClick={(e) => e.preventDefault()}
+                                                    />
+                                                </TooltipTrigger>
+                                                <TooltipContent side="top" className="max-w-[200px] text-center">
+                                                    Agents marked unavailable are skipped in auto-assignment
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </div>
+                                    )}
 
                                     <div className="mt-auto grid grid-cols-3 gap-2 pt-4 border-t border-border/50">
                                         <div className="text-center">
@@ -393,6 +441,7 @@ export default function TeamPage() {
                                 </Link>
                             ))}
                         </div>
+                        </TooltipProvider>
                     )}
                 </TabsContent>
 

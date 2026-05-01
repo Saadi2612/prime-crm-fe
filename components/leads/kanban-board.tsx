@@ -246,8 +246,17 @@ const KanbanLeadCard = memo(function KanbanLeadCard({
                 <p className="text-slate-500 text-xs mb-3 font-mono">{lead.phone}</p>
             )}
 
-            {lead.project?.name && (
-                <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-wrap gap-1.5">
+                {lead.is_queued && (
+                    <span
+                        className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tighter"
+                        style={{ color: "#B45309", backgroundColor: "#FEF3C7" }}
+                        title="Queued for distribution at next office open"
+                    >
+                        Queued
+                    </span>
+                )}
+                {lead.project?.name && (
                     <Link
                         href={`/projects/${lead.project.id}`}
                         onClick={(e) => e.stopPropagation()}
@@ -256,8 +265,8 @@ const KanbanLeadCard = memo(function KanbanLeadCard({
                     >
                         {lead.project.name}
                     </Link>
-                </div>
-            )}
+                )}
+            </div>
 
             <div className="flex items-center justify-between mt-1.5">
                 {lead.latest_note ? (
@@ -727,7 +736,7 @@ export function KanbanBoardView() {
                                             <KanbanColumn
                                                 key={stage.id}
                                                 value={stage.id}
-                                                className="flex flex-col min-w-[200px] w-[360px] shrink-0 rounded-xl overflow-hidden"
+                                                className="flex flex-col min-w-[200px] w-[300px] shrink-0 rounded-xl overflow-hidden"
                                                 style={{ backgroundColor: `${accent}12` }}
                                             >
                                                 {/* Column header */}
@@ -866,6 +875,15 @@ export function KanbanBoardView() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-3">
+                                                {lead.is_queued && (
+                                                    <span
+                                                        className="text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-tighter shrink-0"
+                                                        style={{ color: "#B45309", backgroundColor: "#FEF3C7" }}
+                                                        title="Queued for distribution at next office open"
+                                                    >
+                                                        Queued
+                                                    </span>
+                                                )}
                                                 {lead.project?.name && (
                                                     <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold uppercase tracking-tighter">
                                                         {lead.project.name}

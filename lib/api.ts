@@ -122,10 +122,9 @@ export async function loginApi(
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(
-      (err as { detail?: string }).detail ?? `Login failed (${res.status})`
-    );
+    const err = await res.json().catch(() => ({})) as { detail?: string; non_field_errors?: string[] };
+    const message = err.non_field_errors?.[0] ?? err.detail ?? `Login failed (${res.status})`;
+    throw new Error(message);
   }
 
   const data = await res.json();
@@ -447,6 +446,7 @@ export interface TeamMember {
   email: string;
   role: string;
   phone_number?: string | null;
+  is_available_for_assignment?: boolean;
   lead_stats?: {
     total: number;
     active: number;
@@ -461,6 +461,16 @@ export async function fetchTeamMembers(): Promise<TeamMember[]> {
 
 export async function fetchTeamMember(id: string): Promise<TeamMember> {
   return apiFetch<TeamMember>(`/auth/users/${id}/`);
+}
+
+export async function updateUserAvailability(
+  userId: string,
+  isAvailable: boolean
+): Promise<TeamMember> {
+  return apiFetch<TeamMember>(`/auth/users/${userId}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ is_available_for_assignment: isAvailable }),
+  });
 }
 
 // ── Invitations ───────────────────────────────────────────────────────────────
@@ -556,4 +566,39 @@ export async function fetchMetaStatus(): Promise<MetaStatus> {
 
 export async function initiateMetaOAuth(): Promise<{ url: string }> {
   return apiFetch<{ url: string }>("/meta/oauth/initiate/");
+}
+
+// ── Lead Distribution Settings ────────────────────────────────────────────────
+
+export interface DistributionSettings {
+  is_distribution_enabled: boolean;
+  timezone: string;
+  working_days: number[];
+  office_open: string;
+  office_close: string;
+  inactivity_minutes: number;
+  max_reassignments: number;
+  is_office_hours_now: boolean;
+  next_open: string | null;
+}
+
+export async function fetchDistributionSettings(): Promise<DistributionSettings> {
+  return apiFetch<DistributionSettings>("/settings/distribution/");
+}
+
+export async function updateDistributionSettings(
+  data: Partial<Pick<DistributionSettings, "is_distribution_enabled" | "timezone" | "working_days" | "office_open" | "office_close">>
+): Promise<DistributionSettings> {
+  return apiFetch<DistributionSettings>("/settings/distribution/", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchQueuedLeadsCount(): Promise<number> {
+  const data = await apiFetch<{ count: number } | unknown[]>("/leads/?is_queued=true&count=true");
+  if (typeof data === "object" && !Array.isArray(data) && data !== null && "count" in data) {
+    return (data as { count: number }).count;
+  }
+  return 0;
 }
