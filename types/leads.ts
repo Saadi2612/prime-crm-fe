@@ -72,6 +72,8 @@ export interface Lead {
   custom_data?: Record<string, string> | null;
   form?: string;
   property_interest?: string;
+  /** True when queued for distribution at next office open */
+  is_queued?: boolean;
   created_at: string;
   updated_at: string;
 }
