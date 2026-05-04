@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Inbox, RefreshCw, ShieldOff, AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 20;
 
 function CardSkeleton() {
     return (
@@ -33,17 +33,19 @@ export default function NewLeadsPage() {
     const [page, setPage] = useState(1);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [pageSize, setPageSize] = useState(PAGE_SIZE);
 
     const isAdmin = user?.role === "admin";
-    const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
     const loadData = (p = page) => {
         if (!isAdmin) return;
         setIsLoading(true);
         setError(null);
         Promise.all([fetchUnassignedLeads(p), fetchTeamMembers()])
-            .then(([{ results, count }, membersData]) => {
+            .then(([{ results, count, page_size }, membersData]) => {
                 setLeads(results);
+                setPageSize(page_size);
                 setTotalCount(count);
                 setTeamMembers(membersData);
             })
@@ -177,7 +179,7 @@ export default function NewLeadsPage() {
                 {!isLoading && !error && totalCount > 0 && (
                     <div className="mt-10 flex items-center justify-between">
                         <p className="text-sm text-muted-foreground font-medium">
-                            Showing {Math.min((page - 1) * PAGE_SIZE + 1, totalCount)}–{Math.min(page * PAGE_SIZE, totalCount)} of{" "}
+                            Showing {Math.min((page - 1) * pageSize + 1, totalCount)}-{Math.min(page * pageSize, totalCount)} of{" "}
                             <span className="text-foreground font-bold">{totalCount} pending leads</span>
                         </p>
 
