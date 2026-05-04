@@ -285,10 +285,10 @@ export async function fetchLead(id: string): Promise<Lead> {
 }
 
 /** Fetch all leads that have no assigned user. Admin/manager only. */
-export async function fetchUnassignedLeads(page = 1): Promise<{ results: Lead[]; count: number }> {
-  const data = await apiFetch<{ results: Lead[]; count: number } | Lead[]>(`/leads/unassigned/?page=${page}`);
-  if (Array.isArray(data)) return { results: data, count: data.length };
-  return { results: data.results, count: data.count };
+export async function fetchUnassignedLeads(page = 1): Promise<{ results: Lead[]; count: number, page_size: number }> {
+  const data = await apiFetch<{ results: Lead[]; count: number, page_size: number } | Lead[]>(`/leads/unassigned/?page=${page}`);
+  if (Array.isArray(data)) return { results: data, count: data.length, page_size: 20 };
+  return { results: data.results, count: data.count, page_size: data.page_size };
 }
 
 export async function deleteLead(id: string): Promise<void> {
@@ -473,6 +473,17 @@ export async function updateUserAvailability(
   });
 }
 
+export async function getMyAvailability(): Promise<{ is_available_for_assignment: boolean }> {
+  return apiFetch<{ is_available_for_assignment: boolean }>("/auth/users/availability/");
+}
+
+export async function setMyAvailability(isAvailable: boolean): Promise<{ is_available_for_assignment: boolean }> {
+  return apiFetch<{ is_available_for_assignment: boolean }>("/auth/users/availability/", {
+    method: "POST",
+    body: JSON.stringify({ is_available_for_assignment: isAvailable }),
+  });
+}
+
 // ── Invitations ───────────────────────────────────────────────────────────────
 
 export interface PendingInvitation {
@@ -514,6 +525,7 @@ export interface RegisterAgencyResponse {
   agency_name: string;
   subdomain: string;
   workspace_url: string;
+  status_url: string;
 }
 
 export async function registerAgency(
@@ -545,6 +557,23 @@ export async function registerAgency(
   }
 
   return res.json() as Promise<RegisterAgencyResponse>;
+}
+
+export type RegistrationStatusValue = "pending" | "active" | "failed";
+
+export interface RegistrationStatusResponse {
+  status: RegistrationStatusValue;
+  progress?: number;
+  step?: string;
+}
+
+export async function getRegistrationStatus(subdomain: string): Promise<RegistrationStatusResponse> {
+  const res = await fetch(
+    `${getPublicBaseUrl()}/api/tenants/${subdomain}/status/`,
+    { method: "GET" }
+  );
+  if (!res.ok) throw new Error("Status check failed");
+  return res.json() as Promise<RegistrationStatusResponse>;
 }
 
 // ── Meta / Facebook Integration ───────────────────────────────────────────────

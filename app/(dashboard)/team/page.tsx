@@ -385,30 +385,32 @@ export default function TeamPage() {
                                         <span className="truncate">{member.email}</span>
                                     </div>
 
-                                    {/* Availability toggle — only for agents, visible to admin/manager */}
-                                    {canToggleAvailability && member.role === "agent" && (
+                                    {/* Availability row — visible for all non-admin members */}
+                                    {member.role.toLowerCase() !== "admin" && (
                                         <div
                                             className="flex items-center justify-between mb-4 px-3 py-2.5 rounded-lg bg-muted/40 border border-border/50"
-                                            onClick={(e) => e.preventDefault()}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                         >
                                             <div className="flex items-center gap-2">
                                                 <div className={`h-2 w-2 rounded-full shrink-0 ${member.is_available_for_assignment !== false ? "bg-green-500" : "bg-muted-foreground/40"}`} />
                                                 <span className="text-xs font-medium text-foreground">
-                                                    {member.is_available_for_assignment !== false ? "Available" : "On Leave"}
+                                                    {member.is_available_for_assignment !== false ? "Available" : "Unavailable"}
                                                 </span>
                                             </div>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <Switch
-                                                        checked={member.is_available_for_assignment !== false}
-                                                        onCheckedChange={(v) => handleAvailabilityToggle(member.id, v)}
-                                                        onClick={(e) => e.preventDefault()}
-                                                    />
-                                                </TooltipTrigger>
-                                                <TooltipContent side="top" className="max-w-[200px] text-center">
-                                                    Agents marked unavailable are skipped in auto-assignment
-                                                </TooltipContent>
-                                            </Tooltip>
+                                            {canToggleAvailability && (
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Switch
+                                                            checked={member.is_available_for_assignment !== false}
+                                                            onCheckedChange={(v) => handleAvailabilityToggle(member.id, v)}
+                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                                        />
+                                                    </TooltipTrigger>
+                                                    <TooltipContent side="top" className="max-w-[200px] text-center">
+                                                        Agents marked unavailable are skipped in auto-assignment
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            )}
                                         </div>
                                     )}
 

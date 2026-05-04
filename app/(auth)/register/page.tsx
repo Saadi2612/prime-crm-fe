@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +12,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Building2, CheckCircle2, ExternalLink, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Building2, CheckCircle2, ExternalLink, Eye, EyeOff, Loader2, AlertTriangle } from "lucide-react";
 import Link from "next/link";
-import { registerAgency } from "@/lib/api";
+import { registerAgency, getRegistrationStatus } from "@/lib/api";
 
 function slugify(value: string): string {
   return value
@@ -27,6 +27,16 @@ function slugify(value: string): string {
     .slice(0, 63);
 }
 
+type Phase =
+  | { name: "IDLE" }
+  | { name: "SUBMITTING" }
+  | { name: "PROVISIONING"; subdomain: string; workspaceUrl: string }
+  | { name: "READY"; workspaceUrl: string }
+  | { name: "FAILED"; prefill: { agencyName: string; subdomain: string; adminEmail: string } };
+
+const POLL_INTERVAL_MS = 3000;
+const POLL_TIMEOUT_MS = 240000;
+
 export default function RegisterPage() {
   const [agencyName, setAgencyName] = useState("");
   const [subdomain, setSubdomain] = useState("");
@@ -34,8 +44,63 @@ export default function RegisterPage() {
   const [adminEmail, setAdminEmail] = useState("");
   const [adminPassword, setAdminPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [workspaceUrl, setWorkspaceUrl] = useState<string | null>(null);
+  const [phase, setPhase] = useState<Phase>({ name: "IDLE" });
+  const [progress, setProgress] = useState(0);
+  const [progressStep, setProgressStep] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const networkErrorCountRef = useRef(0);
+
+  function stopPolling() {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+    if (pollTimeoutRef.current) {
+      clearTimeout(pollTimeoutRef.current);
+      pollTimeoutRef.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => stopPolling();
+  }, []);
+
+  function startPolling(sub: string, workspaceUrl: string, prefill: { agencyName: string; subdomain: string; adminEmail: string }) {
+    networkErrorCountRef.current = 0;
+
+    pollTimeoutRef.current = setTimeout(() => {
+      stopPolling();
+      setPhase({ name: "FAILED", prefill });
+    }, POLL_TIMEOUT_MS);
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await getRegistrationStatus(sub);
+        networkErrorCountRef.current = 0;
+
+        if (res.progress != null) setProgress(res.progress);
+        if (res.step) setProgressStep(res.step);
+
+        if (res.status === "active") {
+          setProgress(100);
+          stopPolling();
+          setPhase({ name: "READY", workspaceUrl });
+        } else if (res.status === "failed") {
+          stopPolling();
+          setPhase({ name: "FAILED", prefill });
+        }
+      } catch {
+        networkErrorCountRef.current += 1;
+        if (networkErrorCountRef.current >= 3) {
+          stopPolling();
+          setPhase({ name: "FAILED", prefill });
+        }
+      }
+    }, POLL_INTERVAL_MS);
+  }
 
   function handleAgencyNameChange(e: React.ChangeEvent<HTMLInputElement>) {
     const val = e.target.value;
@@ -61,6 +126,7 @@ export default function RegisterPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setPhase({ name: "SUBMITTING" });
     startTransition(async () => {
       try {
         const res = await registerAgency({
@@ -69,14 +135,64 @@ export default function RegisterPage() {
           admin_email: adminEmail,
           admin_password: adminPassword,
         });
-        setWorkspaceUrl(res.workspace_url);
+        const prefill = { agencyName, subdomain, adminEmail };
+        setPhase({ name: "PROVISIONING", subdomain: res.subdomain, workspaceUrl: res.workspace_url });
+        startPolling(res.subdomain, res.workspace_url, prefill);
       } catch (err: unknown) {
+        setPhase({ name: "IDLE" });
         toast.error(err instanceof Error ? err.message : "Registration failed. Please try again.");
       }
     });
   }
 
-  if (workspaceUrl) {
+  function handleTryAgain(prefill: { agencyName: string; subdomain: string; adminEmail: string }) {
+    setAgencyName(prefill.agencyName);
+    setSubdomain(prefill.subdomain);
+    setSubdomainEdited(true);
+    setAdminEmail(prefill.adminEmail);
+    setAdminPassword("");
+    setPhase({ name: "IDLE" });
+  }
+
+  // PROVISIONING screen
+  if (phase.name === "PROVISIONING") {
+    return (
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="space-y-1 pb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">PropFlow CRM</span>
+          </div>
+          <CardTitle className="text-2xl font-semibold">Setting up your workspace…</CardTitle>
+          <CardDescription>This usually takes 15–30 seconds. Do not close this tab.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 py-4">
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground truncate pr-2">
+              {progressStep || "Initializing…"}
+            </span>
+            <span className="font-semibold tabular-nums text-foreground shrink-0">
+              {progress}%
+            </span>
+          </div>
+          <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-xs text-muted-foreground text-center pt-1">
+            Do not close this tab.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // READY / success screen
+  if (phase.name === "READY") {
     return (
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-1 pb-6">
@@ -97,21 +213,55 @@ export default function RegisterPage() {
             Your workspace is live at:
           </p>
           <a
-            href={workspaceUrl}
+            href={phase.workspaceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
           >
             <ExternalLink className="h-4 w-4 shrink-0" />
-            {workspaceUrl}
+            {phase.workspaceUrl}
           </a>
           <Button asChild className="w-full">
-            <a href={workspaceUrl}>Go to my dashboard</a>
+            <a href={phase.workspaceUrl}>Go to my dashboard</a>
           </Button>
         </CardContent>
       </Card>
     );
   }
+
+  // FAILED screen
+  if (phase.name === "FAILED") {
+    return (
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="space-y-1 pb-6">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Building2 className="h-5 w-5" />
+            </div>
+            <span className="text-xl font-bold tracking-tight">PropFlow CRM</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-6 w-6 text-destructive" />
+            <CardTitle className="text-2xl font-semibold">Workspace setup failed</CardTitle>
+          </div>
+          <CardDescription>
+            We couldn&apos;t provision your workspace. Please contact support or try again.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          <Button className="w-full" onClick={() => handleTryAgain(phase.prefill)}>
+            Try Again
+          </Button>
+          <Button variant="outline" className="w-full" asChild>
+            <a href="mailto:support@propflowcrm.com">Contact Support</a>
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // IDLE / SUBMITTING — registration form
+  const isDisabled = isPending || phase.name === "SUBMITTING";
 
   return (
     <Card className="w-full max-w-md shadow-xl">
@@ -137,7 +287,7 @@ export default function RegisterPage() {
               required
               value={agencyName}
               onChange={handleAgencyNameChange}
-              disabled={isPending}
+              disabled={isDisabled}
             />
           </div>
 
@@ -151,7 +301,7 @@ export default function RegisterPage() {
                 required
                 value={subdomain}
                 onChange={handleSubdomainChange}
-                disabled={isPending}
+                disabled={isDisabled}
                 className="border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 min-w-0"
               />
               {workspacePreview && (
@@ -177,7 +327,7 @@ export default function RegisterPage() {
               required
               value={adminEmail}
               onChange={(e) => setAdminEmail(e.target.value)}
-              disabled={isPending}
+              disabled={isDisabled}
             />
           </div>
 
@@ -193,7 +343,7 @@ export default function RegisterPage() {
                 minLength={8}
                 value={adminPassword}
                 onChange={(e) => setAdminPassword(e.target.value)}
-                disabled={isPending}
+                disabled={isDisabled}
                 className="pr-10"
               />
               <button
@@ -208,9 +358,9 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isPending || !subdomain}>
-            {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? "Creating workspace…" : "Create workspace"}
+          <Button type="submit" className="w-full" disabled={isDisabled || !subdomain}>
+            {isDisabled && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isDisabled ? "Creating workspace…" : "Create workspace"}
           </Button>
 
           <p className="text-center text-sm text-muted-foreground">

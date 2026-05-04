@@ -2,7 +2,10 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, HelpCircle, Bell, Plus } from "lucide-react";
+import { Search, HelpCircle, Bell } from "lucide-react";
+import { useState, useEffect } from "react";
+import { getMyAvailability, setMyAvailability } from "@/lib/api";
+import { useAuth } from "@/context/auth-context";
 
 // Per-route tab configuration
 const routeTabs: Record<string, { label: string; href: string }[]> = {
@@ -33,6 +36,56 @@ function getTabsForPath(pathname: string) {
         }
     }
     return null;
+}
+
+function AvailabilityToggle() {
+    const { user } = useAuth();
+    const [available, setAvailable] = useState<boolean | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        getMyAvailability()
+            .then((data) => setAvailable(data.is_available_for_assignment))
+            .catch(() => {});
+    }, []);
+
+    async function toggle() {
+        if (available === null || loading) return;
+        setLoading(true);
+        try {
+            const data = await setMyAvailability(!available);
+            setAvailable(data.is_available_for_assignment);
+        } catch {
+            // revert on error — no-op, state unchanged
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (user?.role === "admin" || available === null) return null;
+
+    return (
+        <div className="flex items-center gap-2">
+            <span className={`text-xs font-medium ${available ? "text-green-700" : "text-slate-400"}`}>
+                {available ? "Available" : "Unavailable"}
+            </span>
+            <button
+                role="switch"
+                aria-checked={available}
+                onClick={toggle}
+                disabled={loading}
+                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
+                    available ? "bg-green-500" : "bg-slate-300"
+                } ${loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+            >
+                <span
+                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 ${
+                        available ? "translate-x-4" : "translate-x-1"
+                    }`}
+                />
+            </button>
+        </div>
+    );
 }
 
 function TopHeader({ pathname, router }: { pathname: string; router: ReturnType<typeof useRouter> }) {
@@ -83,6 +136,7 @@ function TopHeader({ pathname, router }: { pathname: string; router: ReturnType<
 
             {/* Right actions */}
             <div className="flex items-center gap-3">
+                <AvailabilityToggle />
                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F4F6F9] transition-colors">
                     <HelpCircle className="w-4.5 h-4.5" />
                 </button>
