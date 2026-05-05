@@ -1,14 +1,20 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import {
     fetchTeamMembers,
     inviteUser,
     fetchPendingInvitations,
+    fetchBlockedUsers,
+    fetchUnavailableUsers,
     resendInvitation,
     deleteInvitation,
     updateUserAvailability,
+    blockUser,
+    unblockUser,
+    deleteUser,
     type TeamMember,
     type PendingInvitation,
 } from "@/lib/api";
@@ -52,10 +58,9 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
-import { Mail, Plus, Shield, UserCircle2, Loader2, AlertTriangle, RefreshCw, Clock, Trash2, Send, Users } from "lucide-react";
+import { Mail, Plus, Shield, UserCircle2, Loader2, AlertTriangle, RefreshCw, Clock, Trash2, Send, Users, Ban } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import Link from "next/link";
 
 // Avatar colours per name hash
 const AVATAR_COLORS = [
@@ -81,8 +86,11 @@ function initials(name: string) {
 
 export default function TeamPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [pendingInvites, setPendingInvites] = useState<PendingInvitation[]>([]);
+    const [blockedUsers, setBlockedUsers] = useState<TeamMember[]>([]);
+    const [unavailableUsers, setUnavailableUsers] = useState<TeamMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -93,26 +101,42 @@ export default function TeamPage() {
     const [phone, setPhone] = useState("");
     const [isInviting, startTransition] = useTransition();
 
+    const isAdmin = user?.role === "admin";
+    const isAdminOrManager = user?.role === "admin" || user?.role === "manager";
+
     const loadData = () => {
         setIsLoading(true);
         setError(null);
-        Promise.all([fetchTeamMembers(), fetchPendingInvitations()])
-            .then(([membersData, pendingData]) => {
-                setMembers(membersData);
-                setPendingInvites(pendingData);
+        const requests: Promise<unknown>[] = [fetchTeamMembers(), fetchPendingInvitations()];
+        if (isAdmin) requests.push(fetchBlockedUsers());
+        if (isAdminOrManager) requests.push(fetchUnavailableUsers());
+
+        Promise.all(requests)
+            .then((results) => {
+                setMembers(results[0] as TeamMember[]);
+                setPendingInvites(results[1] as PendingInvitation[]);
+                if (isAdmin) setBlockedUsers(results[2] as TeamMember[]);
+                if (isAdminOrManager) setUnavailableUsers(results[isAdmin ? 3 : 2] as TeamMember[]);
             })
-            .catch((e) => setError(e.message))
+            .catch((e) => setError(e instanceof Error ? e.message : "Failed to load team data"))
             .finally(() => setIsLoading(false));
     };
 
     useEffect(() => {
-        Promise.all([fetchTeamMembers(), fetchPendingInvitations()])
-            .then(([membersData, pendingData]) => {
-                setMembers(membersData);
-                setPendingInvites(pendingData);
+        const requests: Promise<unknown>[] = [fetchTeamMembers(), fetchPendingInvitations()];
+        if (isAdmin) requests.push(fetchBlockedUsers());
+        if (isAdminOrManager) requests.push(fetchUnavailableUsers());
+
+        Promise.all(requests)
+            .then((results) => {
+                setMembers(results[0] as TeamMember[]);
+                setPendingInvites(results[1] as PendingInvitation[]);
+                if (isAdmin) setBlockedUsers(results[2] as TeamMember[]);
+                if (isAdminOrManager) setUnavailableUsers(results[isAdmin ? 3 : 2] as TeamMember[]);
             })
             .catch((e: unknown) => setError(e instanceof Error ? e.message : "Failed to load team data"))
             .finally(() => setIsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleInvite = (e: React.FormEvent) => {
@@ -133,8 +157,8 @@ export default function TeamPage() {
         });
     };
 
-    const canInvite = user?.role === "admin" || user?.role === "manager";
-    const canToggleAvailability = user?.role === "admin" || user?.role === "manager";
+    const canInvite = isAdminOrManager;
+    const canToggleAvailability = isAdminOrManager;
 
     const handleAvailabilityToggle = async (memberId: string, isAvailable: boolean) => {
         // Optimistic update
@@ -149,6 +173,36 @@ export default function TeamPage() {
                 prev.map((m) => m.id === memberId ? { ...m, is_available_for_assignment: !isAvailable } : m)
             );
             toast.error(err instanceof Error ? err.message : "Failed to update availability.");
+        }
+    };
+
+    const handleBlockUser = async (memberId: string) => {
+        try {
+            await blockUser(memberId);
+            toast.success("User blocked. They can no longer log in.");
+            loadData();
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "Failed to block user.");
+        }
+    };
+
+    const handleUnblockUser = async (memberId: string) => {
+        try {
+            await unblockUser(memberId);
+            toast.success("User unblocked. They can log in again.");
+            loadData();
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "Failed to unblock user.");
+        }
+    };
+
+    const handleDeleteUser = async (memberId: string) => {
+        try {
+            await deleteUser(memberId);
+            toast.success("User permanently deleted.");
+            setMembers((prev) => prev.filter((m) => m.id !== memberId));
+        } catch (err: unknown) {
+            toast.error(err instanceof Error ? err.message : "Failed to delete user.");
         }
     };
 
@@ -298,6 +352,16 @@ export default function TeamPage() {
                             Pending Invitations {pendingInvites.length > 0 && `(${pendingInvites.length})`}
                         </TabsTrigger>
                     )}
+                    {isAdminOrManager && (
+                        <TabsTrigger value="unavailable">
+                            Unavailable {unavailableUsers.length > 0 && `(${unavailableUsers.length})`}
+                        </TabsTrigger>
+                    )}
+                    {isAdmin && (
+                        <TabsTrigger value="blocked">
+                            Blocked {blockedUsers.length > 0 && `(${blockedUsers.length})`}
+                        </TabsTrigger>
+                    )}
                 </TabsList>
 
                 <TabsContent value="active" className="mt-0">
@@ -353,10 +417,10 @@ export default function TeamPage() {
                         <TooltipProvider>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                             {members.map((member) => (
-                                <Link
+                                <div
                                     key={member.id}
-                                    href={`/team/${member.id}`}
-                                    className="group rounded-xl border border-border bg-card p-6 shadow-sm hover:border-foreground/20 hover:shadow-md transition-all flex flex-col"
+                                    onClick={() => router.push(`/team/${member.id}`)}
+                                    className="group rounded-xl border border-border bg-card p-6 shadow-sm hover:border-foreground/20 hover:shadow-md transition-all flex flex-col cursor-pointer"
                                 >
                                     <div className="flex items-center gap-4 mb-4">
                                         <div className={`h-14 w-14 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 ${avatarColor(member.full_name)}`}>
@@ -389,7 +453,7 @@ export default function TeamPage() {
                                     {member.role.toLowerCase() !== "admin" && (
                                         <div
                                             className="flex items-center justify-between mb-4 px-3 py-2.5 rounded-lg bg-muted/40 border border-border/50"
-                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                                            onClick={(e) => e.stopPropagation()}
                                         >
                                             <div className="flex items-center gap-2">
                                                 <div className={`h-2 w-2 rounded-full shrink-0 ${member.is_available_for_assignment !== false ? "bg-green-500" : "bg-muted-foreground/40"}`} />
@@ -398,18 +462,11 @@ export default function TeamPage() {
                                                 </span>
                                             </div>
                                             {canToggleAvailability && (
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Switch
-                                                            checked={member.is_available_for_assignment !== false}
-                                                            onCheckedChange={(v) => handleAvailabilityToggle(member.id, v)}
-                                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                                                        />
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="top" className="max-w-[200px] text-center">
-                                                        Agents marked unavailable are skipped in auto-assignment
-                                                    </TooltipContent>
-                                                </Tooltip>
+                                                <Switch
+                                                className="cursor-pointer"
+                                                    checked={member.is_available_for_assignment !== false}
+                                                    onCheckedChange={(v) => handleAvailabilityToggle(member.id, v)}
+                                                />
                                             )}
                                         </div>
                                     )}
@@ -440,7 +497,109 @@ export default function TeamPage() {
                                             </div>
                                         </div>
                                     </div>
-                                </Link>
+
+                                    {/* Admin actions — not shown for self */}
+                                    {user?.role === "admin" && user?.email !== member.email && (
+                                        <div
+                                            className="flex items-center gap-2 mt-4 pt-4 border-t border-border/50"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {/* Block / Unblock */}
+                                            {member.is_active === false ? (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="flex-1 h-8 gap-1.5 text-xs text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                                                        >
+                                                            <Ban className="h-3.5 w-3.5" />
+                                                            Unblock
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Unblock {member.full_name || member.email}?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Their account will be restored and they will be able to log in again.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleUnblockUser(member.id)}
+                                                                className="bg-green-600 text-white hover:bg-green-700"
+                                                            >
+                                                                Unblock User
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            ) : (
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="flex-1 h-8 gap-1.5 text-xs text-amber-600 border-amber-200 hover:bg-amber-50 hover:text-amber-700"
+                                                        >
+                                                            <Ban className="h-3.5 w-3.5" />
+                                                            Block
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Block {member.full_name || member.email}?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Their account will be deactivated immediately. They won&apos;t be able to log in until unblocked.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleBlockUser(member.id)}
+                                                                className="bg-amber-600 text-white hover:bg-amber-700"
+                                                            >
+                                                                Block User
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            )}
+
+                                            {/* Delete */}
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex-1 h-8 gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        Delete
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Delete {member.full_name || member.email}?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            This permanently deletes the user and all their data. This action cannot be undone.
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                        <AlertDialogAction
+                                                            onClick={() => handleDeleteUser(member.id)}
+                                                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                        >
+                                                            Delete Permanently
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
+                                        </div>
+                                    )}
+                                </div>
                             ))}
                         </div>
                         </TooltipProvider>
@@ -540,6 +699,139 @@ export default function TeamPage() {
                                                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                                             >
                                                                 Delete
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </TabsContent>
+                )}
+
+                {isAdminOrManager && (
+                    <TabsContent value="unavailable" className="mt-0">
+                        {unavailableUsers.length === 0 ? (
+                            <div className="rounded-xl border border-border bg-card py-16 text-center flex flex-col items-center shadow-sm">
+                                <UserCircle2 className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                                <p className="text-foreground font-medium">No unavailable members</p>
+                                <p className="text-muted-foreground text-sm mt-1">All active members are available for assignment.</p>
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+                                <div className="divide-y divide-border">
+                                    {unavailableUsers.map((member) => (
+                                        <div
+                                            key={member.id}
+                                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                                            onClick={() => router.push(`/team/${member.id}`)}
+                                        >
+                                            <div className="flex items-center gap-4 min-w-0">
+                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${avatarColor(member.full_name)}`}>
+                                                    {initials(member.full_name || member.email)}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-medium text-foreground truncate">{member.full_name || "Unnamed User"}</div>
+                                                    <div className="text-xs text-muted-foreground truncate">{member.email}</div>
+                                                </div>
+                                            </div>
+                                            {canToggleAvailability && (
+                                                <div
+                                                    className="flex items-center gap-2 shrink-0 ml-14 sm:ml-0"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <span className="text-xs text-muted-foreground">Mark available</span>
+                                                    <Switch
+                                                        checked={false}
+                                                        onCheckedChange={(v) => handleAvailabilityToggle(member.id, v)}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </TabsContent>
+                )}
+
+                {isAdmin && (
+                    <TabsContent value="blocked" className="mt-0">
+                        {blockedUsers.length === 0 ? (
+                            <div className="rounded-xl border border-border bg-card py-16 text-center flex flex-col items-center shadow-sm">
+                                <Ban className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                                <p className="text-foreground font-medium">No blocked users</p>
+                                <p className="text-muted-foreground text-sm mt-1">All users have active accounts.</p>
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+                                <div className="divide-y divide-border">
+                                    {blockedUsers.map((member) => (
+                                        <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 hover:bg-muted/30 transition-colors">
+                                            <div className="flex items-center gap-4 min-w-0">
+                                                <div className={`h-10 w-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 opacity-50 ${avatarColor(member.full_name)}`}>
+                                                    {initials(member.full_name || member.email)}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-sm font-medium text-foreground truncate flex items-center gap-2">
+                                                        {member.full_name || "Unnamed User"}
+                                                        <span className="text-[10px] uppercase tracking-wider font-semibold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                                                            Blocked
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground truncate">{member.email}</div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 shrink-0 ml-14 sm:ml-0">
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700">
+                                                            <Ban className="h-3.5 w-3.5" />
+                                                            Unblock
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Unblock {member.full_name || member.email}?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                Their account will be restored and they will be able to log in again.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleUnblockUser(member.id)}
+                                                                className="bg-green-600 text-white hover:bg-green-700"
+                                                            >
+                                                                Unblock User
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger asChild>
+                                                        <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10">
+                                                            <Trash2 className="h-3.5 w-3.5" />
+                                                            Delete
+                                                        </Button>
+                                                    </AlertDialogTrigger>
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle>Delete {member.full_name || member.email}?</AlertDialogTitle>
+                                                            <AlertDialogDescription>
+                                                                This permanently deletes the user and all their data. This action cannot be undone.
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                            <AlertDialogAction
+                                                                onClick={() => handleDeleteUser(member.id)}
+                                                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                                            >
+                                                                Delete Permanently
                                                             </AlertDialogAction>
                                                         </AlertDialogFooter>
                                                     </AlertDialogContent>
