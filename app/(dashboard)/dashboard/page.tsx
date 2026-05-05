@@ -318,7 +318,7 @@ export default function DashboardPage() {
                   const initials = (nameParts[0]?.[0] ?? "") + (nameParts[1]?.[0] ?? "");
                   const avatarColors = ["bg-[#2563EB] text-white", "bg-[#DBEAFE] text-[#1E3A8A]", "bg-[#E2E8F0] text-[#475569]"];
                   const avatarColor = avatarColors[index % avatarColors.length];
-                  const stageName = typeof lead.stage === "object" ? (lead.stage as { name: string }).name.toLowerCase() : String(lead.stage ?? "").toLowerCase();
+                  const stageName = typeof lead.stage === "object" && lead.stage !== null ? (lead.stage as { name: string }).name?.toLowerCase() ?? "" : String(lead.stage ?? "").toLowerCase();
                   const badgeColor = stageName.includes("qualif") ? "bg-blue-100 text-blue-600" : stageName.includes("negotiat") ? "bg-emerald-100 text-emerald-600" : stageName.includes("close") || stageName.includes("won") ? "bg-green-100 text-green-700" : stageName.includes("lost") ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-600";
                   
                   return (

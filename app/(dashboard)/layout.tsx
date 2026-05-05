@@ -6,6 +6,7 @@ import { Search, HelpCircle, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getMyAvailability, setMyAvailability } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
+import { Switch } from "@/components/ui/switch";
 
 // Per-route tab configuration
 const routeTabs: Record<string, { label: string; href: string }[]> = {
@@ -49,14 +50,13 @@ function AvailabilityToggle() {
             .catch(() => {});
     }, []);
 
-    async function toggle() {
-        if (available === null || loading) return;
+    async function toggle(next: boolean) {
         setLoading(true);
         try {
-            const data = await setMyAvailability(!available);
+            const data = await setMyAvailability(next);
             setAvailable(data.is_available_for_assignment);
         } catch {
-            // revert on error — no-op, state unchanged
+            setAvailable(!next);
         } finally {
             setLoading(false);
         }
@@ -69,21 +69,12 @@ function AvailabilityToggle() {
             <span className={`text-xs font-medium ${available ? "text-green-700" : "text-slate-400"}`}>
                 {available ? "Available" : "Unavailable"}
             </span>
-            <button
-                role="switch"
-                aria-checked={available}
-                onClick={toggle}
+            <Switch
+                checked={available}
+                onCheckedChange={toggle}
                 disabled={loading}
-                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${
-                    available ? "bg-green-500" : "bg-slate-300"
-                } ${loading ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
-            >
-                <span
-                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                        available ? "translate-x-4" : "translate-x-1"
-                    }`}
-                />
-            </button>
+                className="data-[state=checked]:bg-green-500"
+            />
         </div>
     );
 }

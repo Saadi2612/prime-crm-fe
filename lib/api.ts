@@ -20,10 +20,7 @@ function getPublicBaseUrl(): string {
     if (hostname.includes("localhost")) {
       return `${protocol}//localhost:8000`;
     }
-    // Strip tenant subdomain — use root api domain
-    const parts = hostname.split(".");
-    const rootDomain = parts.slice(-2).join(".");
-    return `${protocol}//api.${rootDomain}`;
+    return process.env.NEXT_PUBLIC_API_URL ?? `${protocol}//api.${hostname.split(".").slice(-2).join(".")}`;
   }
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 }
@@ -32,17 +29,21 @@ function getBaseUrl(): string {
   if (typeof window !== "undefined") {
     const { protocol, hostname } = window.location;
 
-    // Local dev: lfc.localhost:3000 → lfc.localhost:8000
     if (hostname.includes("localhost")) {
       return `${protocol}//${hostname}:8000`;
     }
 
-    // Production: lfc.mypakcrm.com → lfc.api.mypakcrm.com
-    const parts = hostname.split(".");
-    if (parts.length >= 2) {
-      parts.splice(1, 0, "api");
-      return `${protocol}//${parts.join(".")}`;
+    // lfc.mypakcrm.com → lfc.<NEXT_PUBLIC_API_URL hostname> e.g. lfc.be.mypakcrm.com
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (apiUrl) {
+      const apiHostname = new URL(apiUrl).hostname;
+      const tenant = hostname.split(".")[0];
+      return `${protocol}//${tenant}.${apiHostname}`;
     }
+
+    const parts = hostname.split(".");
+    parts.splice(1, 0, "api");
+    return `${protocol}//${parts.join(".")}`;
   }
   return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 }
@@ -446,6 +447,7 @@ export interface TeamMember {
   email: string;
   role: string;
   phone_number?: string | null;
+  is_active?: boolean;
   is_available_for_assignment?: boolean;
   lead_stats?: {
     total: number;
@@ -471,6 +473,26 @@ export async function updateUserAvailability(
     method: "PATCH",
     body: JSON.stringify({ is_available_for_assignment: isAvailable }),
   });
+}
+
+export async function fetchBlockedUsers(): Promise<TeamMember[]> {
+  return apiFetch<TeamMember[]>("/auth/users/blocked/");
+}
+
+export async function fetchUnavailableUsers(): Promise<TeamMember[]> {
+  return apiFetch<TeamMember[]>("/auth/users/unavailable/");
+}
+
+export async function blockUser(userId: string): Promise<void> {
+  return apiFetch<void>(`/auth/users/${userId}/block/`, { method: "POST" });
+}
+
+export async function unblockUser(userId: string): Promise<void> {
+  return apiFetch<void>(`/auth/users/${userId}/unblock/`, { method: "POST" });
+}
+
+export async function deleteUser(userId: string): Promise<void> {
+  return apiFetch<void>(`/auth/users/${userId}/`, { method: "DELETE" });
 }
 
 export async function getMyAvailability(): Promise<{ is_available_for_assignment: boolean }> {
