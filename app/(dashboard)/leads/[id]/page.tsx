@@ -85,7 +85,8 @@ export default function LeadDetailPage() {
     const [notes, setNotes] = useState<LeadNote[]>([]);
     const [notesLoading, setNotesLoading] = useState(true);
     const [newNoteBody, setNewNoteBody] = useState("");
-    const [newNoteFollowUp, setNewNoteFollowUp] = useState("");
+    const [followUpDate, setFollowUpDate] = useState("");
+    const [followUpTime, setFollowUpTime] = useState("");
     const [addingNote, setAddingNote] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -111,6 +112,7 @@ export default function LeadDetailPage() {
     useEffect(() => { load(); }, [load]);
     useEffect(() => { loadNotes(); }, [loadNotes]);
 
+
     async function handleStageChange(newStageId: string) {
         if (!lead || changingStage) return;
         if (getStageId(lead.stage) === newStageId) return;
@@ -130,11 +132,14 @@ export default function LeadDetailPage() {
         if (!lead || !newNoteBody.trim()) return;
         setAddingNote(true);
         try {
-            const payloadFollowUp = newNoteFollowUp ? new Date(newNoteFollowUp).toISOString() : null;
+            const payloadFollowUp = followUpDate
+                ? new Date(`${followUpDate}T${followUpTime || "12:00"}`).toISOString()
+                : null;
             const created = await createLeadNote(lead.id, newNoteBody.trim(), payloadFollowUp);
             setNotes((prev) => [created, ...prev]);
             setNewNoteBody("");
-            setNewNoteFollowUp("");
+            setFollowUpDate("");
+            setFollowUpTime("");
             toast.success("Note added successfully");
         } catch (e) {
             toast.error(e instanceof Error ? e.message : "Failed to save note");
@@ -631,28 +636,35 @@ export default function LeadDetailPage() {
                         }}
                     />
                     {/* Follow-up date */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <label
-                            htmlFor="note-followup"
+                            htmlFor="note-followup-date"
                             className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 select-none"
                         >
                             <CalendarClock className="h-3.5 w-3.5" />
-                            Follow-up date
+                            Follow-up
                         </label>
                         <input
-                            id="note-followup"
-                            type="datetime-local"
-                            value={newNoteFollowUp}
-                            onChange={(e) => setNewNoteFollowUp(e.target.value)}
+                            id="note-followup-date"
+                            type="date"
+                            value={followUpDate}
+                            onChange={(e) => setFollowUpDate(e.target.value)}
                             disabled={addingNote}
-                            className="h-8 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground
-                                       focus:outline-none focus:ring-1 focus:ring-primary/50
-                                       disabled:opacity-50 scheme-light dark:scheme-dark"
+                            className="h-8 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50"
                         />
-                        {newNoteFollowUp && (
+                        <input
+                            id="note-followup-time"
+                            type="time"
+                            value={followUpTime}
+                            onChange={(e) => setFollowUpTime(e.target.value)}
+                            disabled={addingNote || !followUpDate}
+                            placeholder="12:00"
+                            className="h-8 rounded-lg border border-border bg-background px-2.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-50"
+                        />
+                        {followUpDate && (
                             <button
                                 type="button"
-                                onClick={() => setNewNoteFollowUp("")}
+                                onClick={() => { setFollowUpDate(""); setFollowUpTime(""); }}
                                 className="text-xs text-muted-foreground hover:text-destructive transition-colors"
                             >
                                 Clear
