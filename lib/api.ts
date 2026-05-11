@@ -1,4 +1,5 @@
 import type { Lead, LeadNote, LeadsQueryParams, Stage, LeadTransfer } from "@/types/leads";
+import type { AppNotification } from "@/types/notifications";
 import type { AuthSession } from "@/lib/auth";
 import { clearSession } from "@/lib/auth";
 
@@ -589,6 +590,29 @@ export interface RegistrationStatusResponse {
   step?: string;
 }
 
+export function getWsBaseUrl(): string {
+  if (typeof window !== "undefined") {
+    const { protocol, hostname } = window.location;
+    const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
+
+    if (hostname.includes("localhost")) {
+      return `${wsProtocol}//${hostname}:8000`;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (apiUrl) {
+      const apiHostname = new URL(apiUrl).hostname;
+      const tenant = hostname.split(".")[0];
+      return `${wsProtocol}//${tenant}.${apiHostname}`;
+    }
+
+    const parts = hostname.split(".");
+    parts.splice(1, 0, "api");
+    return `${wsProtocol}//${parts.join(".")}`;
+  }
+  return "ws://localhost:8000";
+}
+
 export async function getRegistrationStatus(subdomain: string): Promise<RegistrationStatusResponse> {
   const res = await fetch(
     `${getPublicBaseUrl()}/api/tenants/${subdomain}/status/`,
@@ -652,4 +676,26 @@ export async function fetchQueuedLeadsCount(): Promise<number> {
     return (data as { count: number }).count;
   }
   return 0;
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+
+export interface PaginatedNotifications {
+  results: AppNotification[];
+  count: number;
+  next: string | null;
+  previous: string | null;
+}
+
+export async function fetchNotifications(): Promise<AppNotification[]> {
+  const data = await apiFetch<AppNotification[] | PaginatedNotifications>("/notifications/");
+  return Array.isArray(data) ? data : data.results;
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  return apiFetch<void>(`/notifications/${id}/read/`, { method: "POST" });
+}
+
+export async function markAllNotificationsRead(): Promise<void> {
+  return apiFetch<void>("/notifications/read-all/", { method: "POST" });
 }

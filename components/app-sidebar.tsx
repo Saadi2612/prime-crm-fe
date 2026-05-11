@@ -173,7 +173,7 @@ export function AppSidebar() {
                 onClick={() => setIsCollapsed(!isCollapsed)}
                 className="absolute -right-3 top-6 bg-[#162743] hover:bg-[#1E3355] text-[#8BA3C1] p-1 rounded-full border border-[#17253B] z-10 transition-colors shadow-md"
             >
-                {isCollapsed ? <PanelLeftOpen className="w-3 h-3" /> : <PanelLeftClose className="w-3 h-3" />}
+                {isCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
             </button>
 
             {/* ── Logo ───────────────────────────────────────────── */}
@@ -182,7 +182,7 @@ export function AppSidebar() {
                 {!isCollapsed && (
                     <div className="flex-1 overflow-hidden transition-all duration-300 opacity-100">
                         <div className="text-white text-base font-bold leading-tight tracking-tight">
-                            PropFlow
+                            N-Trails
                         </div>
                         <div className="text-[#5B7A9D] text-[9px] font-semibold uppercase tracking-widest leading-tight whitespace-nowrap">
                             Real Estate CRM
@@ -192,7 +192,7 @@ export function AppSidebar() {
             </div>
 
             {/* ── Add Lead CTA ───────────────────────────────────── */}
-            <div className="px-3 pb-6">
+            {/* <div className="px-3 pb-6">
                 <button
                     onClick={() => router.push("/leads?action=new")}
                     className={`w-full flex items-center justify-center gap-2 bg-[#0F52BA] hover:bg-[#1D4ED8] text-white text-sm font-medium py-2.5 rounded-xl transition-all duration-150 active:scale-[0.98] ${isCollapsed ? "px-0" : "px-4"}`}
@@ -201,7 +201,7 @@ export function AppSidebar() {
                     <Plus className="w-4 h-4 shrink-0" />
                     {!isCollapsed && <span className="truncate">Add Lead</span>}
                 </button>
-            </div>
+            </div> */}
 
             {/* ── Main Nav ───────────────────────────────────────── */}
             <nav className="flex-1 px-3 flex flex-col gap-0.5 overflow-y-auto overflow-x-hidden">
