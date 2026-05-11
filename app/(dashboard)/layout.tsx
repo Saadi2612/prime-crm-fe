@@ -2,28 +2,30 @@
 
 import { AppSidebar } from "@/components/app-sidebar";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, HelpCircle, Bell } from "lucide-react";
+import { Search, HelpCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getMyAvailability, setMyAvailability } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import { Switch } from "@/components/ui/switch";
+import { NotificationProvider } from "@/context/notification-context";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 // Per-route tab configuration
 const routeTabs: Record<string, { label: string; href: string }[]> = {
     "/dashboard": [
         { label: "Overview", href: "/dashboard" },
-        { label: "Pipeline", href: "/dashboard/pipeline" },
+        // { label: "Pipeline", href: "/dashboard/pipeline" },
         { label: "Reports", href: "/dashboard/reports" },
     ],
-    "/leads": [
-        { label: "Kanban", href: "/leads" },
-        { label: "List", href: "/leads" },
-    ],
-    "/projects": [
-        { label: "Overview", href: "/projects" },
-        { label: "Pipeline", href: "/projects/pipeline" },
-        { label: "Reports", href: "/projects/reports" },
-    ],
+    // "/leads": [
+    //     { label: "Kanban", href: "/leads" },
+    //     { label: "List", href: "/leads" },
+    // ],
+    // "/projects": [
+    //     { label: "Overview", href: "/projects" },
+    //     { label: "Pipeline", href: "/projects/pipeline" },
+    //     { label: "Reports", href: "/projects/reports" },
+    // ],
     "/settings": [
         { label: "Integrations", href: "/settings/integrations" },
         { label: "Leads", href: "/settings/leads" },
@@ -131,10 +133,8 @@ function TopHeader({ pathname, router }: { pathname: string; router: ReturnType<
                 <button className="w-8 h-8 rounded-full flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F4F6F9] transition-colors">
                     <HelpCircle className="w-4.5 h-4.5" />
                 </button>
-                <button className="w-8 h-8 rounded-full flex items-center justify-center text-[#94A3B8] hover:text-[#475569] hover:bg-[#F4F6F9] transition-colors relative">
-                    <Bell className="w-4.5 h-4.5" />
-                </button>
-                <button
+                <NotificationBell />
+                {/* <button
                     onClick={() => {
                         if (pathname.startsWith("/projects")) {
                             router.push("/projects?action=new");
@@ -145,7 +145,7 @@ function TopHeader({ pathname, router }: { pathname: string; router: ReturnType<
                     className="flex items-center justify-center bg-[#2563EB] hover:bg-[#1D4ED8] text-white text-sm font-medium px-4 py-1.5 rounded-md transition-all duration-150"
                 >
                     {pathname.startsWith("/projects") ? "+ Add Project" : "Add Lead"}
-                </button>
+                </button> */}
             </div>
         </header>
     );
@@ -160,17 +160,19 @@ export default function DashboardLayout({
     const router = useRouter();
 
     return (
-        <div className="flex h-screen overflow-hidden bg-background">
-            {/* Sidebar */}
-            <AppSidebar />
+        <NotificationProvider>
+            <div className="flex h-screen overflow-hidden bg-background">
+                {/* Sidebar */}
+                <AppSidebar />
 
-            {/* Main area */}
-            <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-                <TopHeader pathname={pathname} router={router} />
-                <main className="flex-1 overflow-y-auto overflow-x-hidden">
-                    {children}
-                </main>
+                {/* Main area */}
+                <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+                    <TopHeader pathname={pathname} router={router} />
+                    <main className="flex-1 overflow-y-auto overflow-x-hidden">
+                        {children}
+                    </main>
+                </div>
             </div>
-        </div>
+        </NotificationProvider>
     );
 }

@@ -782,7 +782,7 @@ export function KanbanBoardView() {
                                                             ))}
 
                                                             {/* Empty-column add button */}
-                                                            {leads.length === 0 && (
+                                                            {/* {leads.length === 0 && (
                                                                 <button
                                                                     onClick={() => openAddLead(stage.id)}
                                                                     className="flex items-center gap-1.5 w-full rounded-lg px-2 py-2 text-xs text-slate-400 hover:text-slate-700 hover:bg-white/70 transition-colors"
@@ -790,7 +790,7 @@ export function KanbanBoardView() {
                                                                     <Plus className="h-3.5 w-3.5" />
                                                                     Add lead
                                                                 </button>
-                                                            )}
+                                                            )} */}
 
                                                             {/* Load more */}
                                                             {col?.hasMore && !col.loading && (
