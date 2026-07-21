@@ -8,6 +8,8 @@ import {
     Building2,
     CalendarClock,
     DollarSign,
+    FileText,
+    Megaphone,
     MessageSquarePlus,
     Pencil,
     Phone,
@@ -22,7 +24,7 @@ import { formatDistanceToNow, format } from "date-fns";
 
 import type { Lead, LeadNote, ProjectRef, StageRef } from "@/types/leads";
 import type { Stage } from "@/types/leads";
-import { fetchLead, fetchStages, deleteLead, updateLeadStage, fetchLeadNotes, createLeadNote } from "@/lib/api";
+import { fetchLead, fetchStages, deleteLead, updateLeadStage, linkProjectToLead, fetchLeadNotes, createLeadNote } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -73,6 +75,7 @@ export default function LeadDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [changingStage, setChangingStage] = useState(false);
+    const [linkingProject, setLinkingProject] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [editOpen, setEditOpen] = useState(false);
     const [transferOpen, setTransferOpen] = useState(false);
@@ -119,6 +122,20 @@ export default function LeadDetailPage() {
             toast.error(e instanceof Error ? e.message : "Failed to update stage");
         } finally {
             setChangingStage(false);
+        }
+    }
+
+    async function handleLinkSuggestedProject() {
+        if (!lead || linkingProject || !lead.suggested_project) return;
+        setLinkingProject(true);
+        try {
+            const updated = await linkProjectToLead(lead.id, lead.suggested_project.id);
+            setLead(updated);
+            toast.success("Project linked");
+        } catch (e) {
+            toast.error(e instanceof Error ? e.message : "Failed to link project");
+        } finally {
+            setLinkingProject(false);
         }
     }
 
@@ -252,7 +269,18 @@ export default function LeadDetailPage() {
                             {inits}
                         </div>
                         <div>
-                            <h1 className="text-3xl font-bold tracking-tight text-foreground">{lead.full_name}</h1>
+                            <div className="flex items-center gap-2.5">
+                                <h1 className="text-3xl font-bold tracking-tight text-foreground">{lead.full_name}</h1>
+                                {lead.leadgen_id && (
+                                    <span
+                                        className="inline-block text-[9px] font-bold uppercase tracking-[0.08em] rounded-md px-2 py-1"
+                                        style={{ color: "#1877F2", backgroundColor: "#E7F0FE" }}
+                                        title="Sourced from Meta lead ads"
+                                    >
+                                        via Meta
+                                    </span>
+                                )}
+                            </div>
                             {lead.job_title && (
                                 <p className="text-muted-foreground font-medium mt-0.5">{lead.job_title}</p>
                             )}
@@ -424,6 +452,50 @@ export default function LeadDetailPage() {
                                                 <span>Budget: <span className="font-medium text-foreground">{budget}</span></span>
                                             </div>
                                         )}
+                                    </div>
+                                ) : lead.suggested_project ? (
+                                    <div className="space-y-3">
+                                        <div className="flex items-start gap-3">
+                                            <Building2 className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-foreground">{lead.suggested_project.name}</p>
+                                                {lead.suggested_project.address && (
+                                                    <p className="text-xs text-muted-foreground mt-0.5">{lead.suggested_project.address}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground italic">Possible match — same Meta form</p>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="w-full"
+                                            disabled={linkingProject}
+                                            onClick={handleLinkSuggestedProject}
+                                        >
+                                            {linkingProject ? "Linking..." : "Link this project"}
+                                        </Button>
+                                    </div>
+                                ) : lead.leadgen_id ? (
+                                    <div className="space-y-3 py-2">
+                                        {(lead.form_name || lead.form_id) && (
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <FileText className="h-3.5 w-3.5 shrink-0" />
+                                                <span>Form: <span className="font-medium text-foreground">{lead.form_name || lead.form_id}</span></span>
+                                            </div>
+                                        )}
+                                        {(lead.ad_name || lead.ad_id) && (
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <Megaphone className="h-3.5 w-3.5 shrink-0" />
+                                                <span>Ad: <span className="font-medium text-foreground">{lead.ad_name || lead.ad_id}</span></span>
+                                            </div>
+                                        )}
+                                        {lead.campaign_name && (
+                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                                <Tag className="h-3.5 w-3.5 shrink-0" />
+                                                <span>Campaign: <span className="font-medium text-foreground">{lead.campaign_name}</span></span>
+                                            </div>
+                                        )}
+                                        <p className="text-xs text-muted-foreground italic pt-1">No project linked yet</p>
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-center py-6">
