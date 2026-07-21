@@ -282,6 +282,16 @@ export async function updateLeadStage(
   });
 }
 
+export async function linkProjectToLead(
+  leadId: string,
+  projectId: string
+): Promise<Lead> {
+  return apiFetch<Lead>(`/leads/${leadId}/`, {
+    method: "PATCH",
+    body: JSON.stringify({ project: projectId }),
+  });
+}
+
 export async function fetchLead(id: string): Promise<Lead> {
   return apiFetch<Lead>(`/leads/${id}/`);
 }

@@ -67,10 +67,18 @@ export interface Lead {
   stage_name?: string;
   /** The API returns a nested ProjectRef object, or null */
   project?: ProjectRef | null;
+  /** Populated when `project` is unset and a Project.form_id matches this lead's form_id */
+  suggested_project?: ProjectRef | null;
   assigned_to?: { id: string; full_name: string; email: string } | string | null;
   transfer_history?: LeadTransfer[];
   custom_data?: Record<string, string> | null;
-  form?: string;
+  /** Non-null only for leads created via Meta webhook/sync */
+  leadgen_id?: string | null;
+  form_id?: string | null;
+  ad_id?: string | null;
+  form_name?: string | null;
+  ad_name?: string | null;
+  campaign_name?: string | null;
   property_interest?: string;
   /** True when queued for distribution at next office open */
   is_queued?: boolean;

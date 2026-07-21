@@ -139,6 +139,15 @@ export function LeadCard({ lead, onEdit, onDelete, assigneeNode, clickable }: Le
 
             {/* Chips row */}
             <div className="flex items-center gap-1.5 flex-wrap">
+                {lead.leadgen_id && (
+                    <span
+                        className="inline-block text-[9px] font-bold uppercase tracking-[0.08em] rounded-md px-2 py-1"
+                        style={{ color: "#1877F2", backgroundColor: "#E7F0FE" }}
+                        title="Sourced from Meta lead ads"
+                    >
+                        via Meta
+                    </span>
+                )}
                 {lead.is_queued && (
                     <span
                         className="inline-block text-[9px] font-bold uppercase tracking-[0.08em] rounded-md px-2 py-1"
