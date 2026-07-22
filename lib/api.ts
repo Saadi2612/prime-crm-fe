@@ -307,6 +307,35 @@ export async function deleteLead(id: string): Promise<void> {
   return apiFetch<void>(`/leads/${id}/`, { method: "DELETE" });
 }
 
+/** Downloads the admin leads export as an .xlsx file. Pass `all: true` for every lead, or `stageIds` for a subset. */
+export async function exportLeads(params: { all?: boolean; stageIds?: string[] }): Promise<void> {
+  const query = params.all
+    ? "all=true"
+    : `stage_ids=${(params.stageIds ?? []).join(",")}`;
+
+  const res = await fetch(`${getBaseUrl()}/leads/export/?${query}`, {
+    headers: getAuthHeaders(),
+  });
+
+  if (!res.ok) {
+    throw new Error(STATUS_MESSAGES[res.status] ?? "Failed to export leads.");
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get("Content-Disposition") ?? "";
+  const filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+  const filename = filenameMatch?.[1] ?? "leads_export.xlsx";
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function updateLead(id: string, data: Partial<Lead>): Promise<Lead> {
   return apiFetch<Lead>(`/leads/${id}/`, {
     method: "PATCH",

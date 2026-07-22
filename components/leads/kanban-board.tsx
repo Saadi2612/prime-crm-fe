@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
     GripVertical, AlertTriangle, LayoutGrid, List, LogIn,
     Plus, RefreshCw, Search, ExternalLink,
-    FileText, Loader2, User, Users,
+    FileText, Loader2, User, Users, Download,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -13,7 +13,9 @@ import type { Lead, Stage } from "@/types/leads";
 import type { TeamMember } from "@/lib/api";
 import { fetchLeads, fetchLeadsPaginated, fetchStages, updateLeadStage, fetchTeamMembers, transferLead } from "@/lib/api";
 import { toast } from "sonner";
+import { useAuth } from "@/context/auth-context";
 import { AddLeadDialog } from "@/components/leads/add-lead-dialog";
+import { ExportLeadsDialog } from "@/components/leads/export-leads-dialog";
 import { LeadsStatsCards } from "@/components/leads/leads-stats-cards";
 // import { LeadCard } from "@/components/leads/lead-card";
 import {
@@ -318,6 +320,8 @@ const KanbanLeadCard = memo(function KanbanLeadCard({
 
 export function KanbanBoardView() {
     const router = useRouter();
+    const { user } = useAuth();
+    const [exportOpen, setExportOpen] = useState(false);
     const dragRef = useRef(false);
     const dragSourceRef = useRef<{ leadId: string; fromColumnId: string; snapshot: Record<string, Lead[]> } | null>(null);
     const columnsRef = useRef<Record<string, Lead[]>>({});
@@ -655,7 +659,7 @@ export function KanbanBoardView() {
                 <LeadsStatsCards />
 
                 {/* ── Search bar (below stats, above kanban) ───────────────────── */}
-                <div className="flex items-center gap-3 mb-8">
+                <div className="flex items-center justify-between gap-3 mb-8">
                     <div className="relative max-w-sm w-full">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
@@ -666,7 +670,27 @@ export function KanbanBoardView() {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
+
+                    {user?.role === "admin" && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-9 gap-2 border-[#E2E8F0] shrink-0"
+                            onClick={() => setExportOpen(true)}
+                        >
+                            <Download className="h-3.5 w-3.5" />
+                            Export
+                        </Button>
+                    )}
                 </div>
+
+                {user?.role === "admin" && (
+                    <ExportLeadsDialog
+                        open={exportOpen}
+                        onOpenChange={setExportOpen}
+                        stages={stages}
+                    />
+                )}
 
                 {/* ── Error banner ──────────────────────────────────────────────── */}
                 {error && (
