@@ -22,6 +22,7 @@ function playSound(type: string) {
 
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
+const BACKLOG_GRACE_MS = 1500;
 
 export interface UseNotificationsReturn {
   notifications: AppNotification[];
@@ -39,6 +40,8 @@ export function useNotifications(enabled: boolean): UseNotificationsReturn {
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const unmountedRef = useRef(false);
   const connectRef = useRef<() => void>(() => {});
+  const suppressSoundRef = useRef(false);
+  const suppressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const addOrUpdate = useCallback((incoming: AppNotification) => {
     setNotifications((prev) => {
@@ -63,6 +66,14 @@ export function useNotifications(enabled: boolean): UseNotificationsReturn {
       if (unmountedRef.current) { ws.close(); return; }
       setConnected(true);
       reconnectDelay.current = RECONNECT_BASE_MS;
+
+      // Backend replays the unread backlog right after connect — suppress
+      // sound for that burst so a fresh login doesn't ring once per item.
+      suppressSoundRef.current = true;
+      if (suppressTimerRef.current) clearTimeout(suppressTimerRef.current);
+      suppressTimerRef.current = setTimeout(() => {
+        suppressSoundRef.current = false;
+      }, BACKLOG_GRACE_MS);
     };
 
     ws.onmessage = (event) => {
@@ -70,7 +81,7 @@ export function useNotifications(enabled: boolean): UseNotificationsReturn {
         const data = JSON.parse(event.data as string) as AppNotification;
         if (data?.id && data?.type) {
           addOrUpdate(data);
-          if (!data.is_read) playSound(data.type);
+          if (!data.is_read && !suppressSoundRef.current) playSound(data.type);
         }
       } catch {
         // malformed message — ignore
@@ -111,6 +122,7 @@ export function useNotifications(enabled: boolean): UseNotificationsReturn {
     return () => {
       unmountedRef.current = true;
       if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (suppressTimerRef.current) clearTimeout(suppressTimerRef.current);
       wsRef.current?.close();
     };
   }, [enabled, connect]);
