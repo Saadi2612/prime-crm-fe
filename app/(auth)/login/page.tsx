@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
+import { saveTotpChallenge } from "@/lib/auth";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +32,17 @@ export default function LoginPage() {
 
         startTransition(async () => {
             try {
-                await login(email, password);
+                const outcome = await login(email, password);
+
+                if (outcome.status === "totp_required") {
+                    // The challenge token is a credential with a 5-minute life. It
+                    // lives in sessionStorage so it dies with the tab and is never
+                    // put in the URL.
+                    saveTotpChallenge(outcome.totpToken);
+                    router.push("/login/2fa");
+                    return;
+                }
+
                 toast.success("Welcome back!");
                 router.replace("/dashboard");
             } catch (err: unknown) {
@@ -58,11 +69,12 @@ export default function LoginPage() {
             </CardHeader>
 
             <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-5">
+                <form onSubmit={handleSubmit} className="space-y-5" data-testid="login-form">
                     <div className="space-y-2">
                         <Label htmlFor="email">Email address</Label>
                         <Input
                             id="email"
+                            data-testid="login-email"
                             type="email"
                             placeholder="you@example.com"
                             autoComplete="email"
@@ -83,6 +95,7 @@ export default function LoginPage() {
                         <div className="relative">
                             <Input
                                 id="password"
+                                data-testid="login-password"
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
                                 autoComplete="current-password"
@@ -108,7 +121,7 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={isPending}>
+                    <Button type="submit" className="w-full" disabled={isPending} data-testid="login-submit">
                         {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isPending ? "Signing in…" : "Sign in"}
                     </Button>

@@ -229,6 +229,9 @@ const KanbanLeadCard = memo(function KanbanLeadCard({
 }) {
     return (
         <div
+            data-testid="lead-card"
+            data-lead-id={lead.id}
+            data-lead-name={lead.full_name}
             className={`group bg-white p-4 rounded-xl shadow-sm border border-transparent hover:border-blue-500/20 hover:shadow-md transition-all ${stageName === "lost" || stageName === "unqualified" ? "opacity-60 grayscale hover:grayscale-0 hover:opacity-100" : ""}`}
             onMouseDown={() => { dragRef.current = false; }}
             onMouseUp={() => { if (!dragRef.current) onNavigate(lead.id); }}
@@ -627,6 +630,17 @@ export function KanbanBoardView() {
                             </SelectContent>
                         </Select>
 
+                        {/* Add lead — the primary write entry point */}
+                        <Button
+                            size="sm"
+                            className="h-9 gap-2 shrink-0"
+                            data-testid="add-lead-button"
+                            onClick={() => openAddLead(stageFilter === "all" ? undefined : stageFilter)}
+                        >
+                            <Plus className="h-3.5 w-3.5" />
+                            Add Lead
+                        </Button>
+
                         {/* View-mode toggle */}
                         <div className="flex bg-slate-100 p-1 rounded-lg gap-0.5">
                             <button
@@ -664,6 +678,7 @@ export function KanbanBoardView() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <input
                             type="text"
+                            data-testid="leads-search"
                             placeholder="Search leads..."
                             className="w-full h-9 pl-9 pr-3 bg-white border border-[#E2E8F0] rounded-lg text-[13px] text-[#0F172A] placeholder-[#94A3B8] outline-none focus:border-[#2563EB] transition-colors"
                             value={search}
@@ -852,7 +867,11 @@ export function KanbanBoardView() {
 
                 {/* ── List View ─────────────────────────────────────────────────── */}
                 {viewMode === "list" && (
-                    <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                    <div
+                        data-testid="leads-list"
+                        data-loading={listLoading ? "true" : "false"}
+                        className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden"
+                    >
                         <div className="divide-y divide-slate-100">
                             {listLoading ? (
                                 Array.from({ length: 4 }).map((_, i) => (
@@ -882,6 +901,9 @@ export function KanbanBoardView() {
                                     return (
                                         <div
                                             key={lead.id}
+                                            data-testid="lead-row"
+                                            data-lead-id={lead.id}
+                                            data-lead-name={lead.full_name}
                                             onClick={() => router.push(`/leads/${lead.id}`)}
                                             className="flex items-center justify-between gap-3 p-4 hover:bg-slate-50 transition-colors cursor-pointer"
                                         >

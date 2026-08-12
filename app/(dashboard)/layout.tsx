@@ -29,6 +29,7 @@ const routeTabs: Record<string, { label: string; href: string }[]> = {
     "/settings": [
         { label: "Integrations", href: "/settings/integrations" },
         { label: "Leads", href: "/settings/leads" },
+        { label: "Security", href: "/settings/security" },
     ],
 };
 
