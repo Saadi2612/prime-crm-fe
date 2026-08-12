@@ -75,6 +75,7 @@ function NavRow({
     return (
         <Link
             href={item.href}
+            data-testid={`nav-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
             className={`
                 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
                 transition-all duration-150 group relative
@@ -165,6 +166,7 @@ export function AppSidebar() {
 
     return (
         <aside
+            data-testid="app-sidebar"
             className={`flex flex-col shrink-0 h-full transition-all duration-300 ease-in-out relative border-r border-[#17253B]`}
             style={{ background: "#0B1525", width: isCollapsed ? "72px" : "220px" }}
         >
@@ -252,6 +254,7 @@ export function AppSidebar() {
             <div className="px-3 pb-5 pt-2">
                 <div
                     onClick={handleLogout}
+                    data-testid="user-menu"
                     className={`
                         w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-150 cursor-pointer group
                         bg-[#1C283B] hover:bg-[#25354D] text-left border border-[#2B3B53] hover:border-[#384B68] shadow-sm

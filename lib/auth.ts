@@ -61,3 +61,26 @@ export function getSavedUser(): AuthUser | null {
 export function isLoggedIn(): boolean {
   return !!getAccessToken();
 }
+
+// ── Two-factor challenge (between password and code) ───────────────────────
+//
+// The challenge token proves the password step passed. It grants nothing else
+// and expires in minutes, but it is still a credential: keep it in
+// sessionStorage (dies with the tab), never in localStorage, a cookie, or the
+// URL, and clear it the moment the code step finishes.
+
+export const TOTP_CHALLENGE_KEY = "crm_totp_challenge";
+
+export function saveTotpChallenge(token: string): void {
+  sessionStorage.setItem(TOTP_CHALLENGE_KEY, token);
+}
+
+export function getTotpChallenge(): string | null {
+  if (typeof window === "undefined") return null;
+  return sessionStorage.getItem(TOTP_CHALLENGE_KEY);
+}
+
+export function clearTotpChallenge(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(TOTP_CHALLENGE_KEY);
+}

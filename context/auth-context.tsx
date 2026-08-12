@@ -8,13 +8,19 @@ import {
     isLoggedIn,
     saveSession,
 } from "@/lib/auth";
-import { loginApi } from "@/lib/api";
+import { loginApi, verifyTotpLogin } from "@/lib/api";
+
+/** What `login` resolved to: a live session, or a pending two-factor challenge. */
+export type LoginOutcome =
+    | { status: "ok" }
+    | { status: "totp_required"; totpToken: string };
 
 interface AuthContextValue {
     user: AuthUser | null;
     isAuthenticated: boolean;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<LoginOutcome>;
+    completeTotpLogin: (totpToken: string, code: string) => Promise<void>;
     logout: () => void;
 }
 
@@ -32,8 +38,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
     }, []);
 
-    const login = useCallback(async (email: string, password: string) => {
-        const session = await loginApi(email, password);
+    const login = useCallback(async (email: string, password: string): Promise<LoginOutcome> => {
+        const result = await loginApi(email, password);
+
+        // Two-factor accounts get no session here — only a challenge to redeem
+        // on the verification step.
+        if (result.status === "totp_required") {
+            return { status: "totp_required", totpToken: result.totpToken };
+        }
+
+        saveSession(result.session);
+        setUser(result.session.user);
+        return { status: "ok" };
+    }, []);
+
+    const completeTotpLogin = useCallback(async (totpToken: string, code: string) => {
+        const session = await verifyTotpLogin(totpToken, code);
         saveSession(session);
         setUser(session.user);
     }, []);
@@ -50,6 +70,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 isAuthenticated: !!user,
                 isLoading,
                 login,
+                completeTotpLogin,
                 logout,
             }}
         >

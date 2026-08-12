@@ -56,6 +56,9 @@ export function LeadCard({ lead, onEdit, onDelete, assigneeNode, clickable }: Le
 
     return (
         <div
+            data-testid="lead-card"
+            data-lead-id={lead.id}
+            data-lead-name={lead.full_name}
             className={`
                 group bg-white rounded-xl p-4
                 shadow-[0_1px_6px_rgba(15,23,42,0.07)]

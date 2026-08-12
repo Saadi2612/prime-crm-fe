@@ -155,7 +155,7 @@ export function AddLeadDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
+            <DialogContent data-testid="lead-dialog" className="sm:max-w-[560px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-lg font-semibold">Add New Lead</DialogTitle>
                     <DialogDescription className="text-sm text-muted-foreground">
@@ -163,7 +163,7 @@ export function AddLeadDialog({
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit} noValidate>
+                <form onSubmit={handleSubmit} noValidate data-testid="lead-form">
                     <div className="grid gap-5 py-4">
                         {/* ── Contact Info ── */}
                         <fieldset className="space-y-4">
@@ -178,13 +178,14 @@ export function AddLeadDialog({
                                 </Label>
                                 <Input
                                     id="full_name"
+                                    data-testid="lead-full-name"
                                     placeholder="e.g. John Smith"
                                     value={form.full_name}
                                     onChange={(e) => set("full_name", e.target.value)}
                                     className={fieldErrors.full_name ? "border-destructive" : ""}
                                 />
                                 {fieldErrors.full_name && (
-                                    <p className="text-xs text-destructive">{fieldErrors.full_name}</p>
+                                    <p className="text-xs text-destructive" data-testid="lead-error-full-name">{fieldErrors.full_name}</p>
                                 )}
                             </div>
 
@@ -195,6 +196,7 @@ export function AddLeadDialog({
                                 </Label>
                                 <Input
                                     id="email"
+                                    data-testid="lead-email"
                                     type="email"
                                     placeholder="example@gmail.com"
                                     value={form.email}
@@ -202,7 +204,7 @@ export function AddLeadDialog({
                                     className={fieldErrors.email ? "border-destructive" : ""}
                                 />
                                 {fieldErrors.email && (
-                                    <p className="text-xs text-destructive">{fieldErrors.email}</p>
+                                    <p className="text-xs text-destructive" data-testid="lead-error-email">{fieldErrors.email}</p>
                                 )}
                             </div>
 
@@ -212,6 +214,7 @@ export function AddLeadDialog({
                                     <Label htmlFor="phone">Phone</Label>
                                     <Input
                                         id="phone"
+                                        data-testid="lead-phone"
                                         type="tel"
                                         placeholder="+92 300 0000000"
                                         value={form.phone}
@@ -224,6 +227,7 @@ export function AddLeadDialog({
                                     <Label htmlFor="job_title">Job Title</Label>
                                     <Input
                                         id="job_title"
+                                        data-testid="lead-job-title"
                                         placeholder="e.g. Manager"
                                         value={form.job_title}
                                         onChange={(e) => set("job_title", e.target.value)}
@@ -321,6 +325,7 @@ export function AddLeadDialog({
                                     <Label htmlFor="min_budget">Min Budget</Label>
                                     <Input
                                         id="min_budget"
+                                        data-testid="lead-min-budget"
                                         type="number"
                                         min={0}
                                         placeholder="0.00"
@@ -332,6 +337,7 @@ export function AddLeadDialog({
                                     <Label htmlFor="max_budget">Max Budget</Label>
                                     <Input
                                         id="max_budget"
+                                        data-testid="lead-max-budget"
                                         type="number"
                                         min={0}
                                         placeholder="0.00"
@@ -340,7 +346,7 @@ export function AddLeadDialog({
                                         className={fieldErrors.max_budget ? "border-destructive" : ""}
                                     />
                                     {fieldErrors.max_budget && (
-                                        <p className="text-xs text-destructive">{fieldErrors.max_budget}</p>
+                                        <p className="text-xs text-destructive" data-testid="lead-error-max-budget">{fieldErrors.max_budget}</p>
                                     )}
                                 </div>
                             </div>
@@ -351,6 +357,7 @@ export function AddLeadDialog({
                             <Label htmlFor="notes">Notes</Label>
                             <Textarea
                                 id="notes"
+                                data-testid="lead-notes"
                                 placeholder="Add any notes about this lead..."
                                 className="resize-none min-h-[90px]"
                                 value={form.notes}
@@ -365,10 +372,11 @@ export function AddLeadDialog({
                             variant="outline"
                             onClick={() => onOpenChange(false)}
                             disabled={submitting}
+                            data-testid="lead-cancel"
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={submitting} className="gap-2">
+                        <Button type="submit" disabled={submitting} className="gap-2" data-testid="lead-submit">
                             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                             {submitting ? "Creating…" : "Create Lead"}
                         </Button>

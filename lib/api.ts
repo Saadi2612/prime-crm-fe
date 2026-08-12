@@ -113,13 +113,22 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
+/**
+ * A login either completes, or stops at the two-factor step. The caller has to
+ * handle both, so the outcome is a discriminated union rather than a session
+ * with optional fields.
+ */
+export type LoginResult =
+  | { status: "ok"; session: AuthSession }
+  | { status: "totp_required"; totpToken: string };
+
 export async function loginApi(
   email: string,
   password: string
-): Promise<AuthSession> {
+): Promise<LoginResult> {
   const res = await fetch(`${getBaseUrl()}/auth/login/`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...getTenantHeader() },
     body: JSON.stringify({ email, password }),
   });
 
@@ -130,10 +139,96 @@ export async function loginApi(
   }
 
   const data = await res.json();
+
+  if (data.totp_required) {
+    return { status: "totp_required", totpToken: data.totp_token as string };
+  }
+
+  return {
+    status: "ok",
+    session: {
+      tokens: { access: data.access, refresh: data.refresh },
+      user: data.user,
+    } as AuthSession,
+  };
+}
+
+/** Second login step — exchange the challenge token and a code for a session. */
+export async function verifyTotpLogin(
+  totpToken: string,
+  code: string
+): Promise<AuthSession> {
+  const res = await fetch(`${getBaseUrl()}/auth/login/totp/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...getTenantHeader() },
+    body: JSON.stringify({ totp_token: totpToken, code }),
+  });
+
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as {
+      detail?: string;
+      totp_token?: string[];
+      code?: string[];
+    };
+    const message =
+      err.detail ??
+      err.code?.[0] ??
+      err.totp_token?.[0] ??
+      `Verification failed (${res.status})`;
+    throw new Error(message);
+  }
+
+  const data = await res.json();
   return {
     tokens: { access: data.access, refresh: data.refresh },
     user: data.user,
   } as AuthSession;
+}
+
+// ── Two-factor authentication (settings) ──────────────────────────────────────
+
+export interface TotpStatus {
+  is_enabled: boolean;
+  is_enrollment_pending: boolean;
+  confirmed_at: string | null;
+  backup_codes_remaining: number;
+  is_available: boolean;
+}
+
+export interface TotpSetup {
+  secret: string;
+  otpauth_uri: string;
+  qr_code: string;
+  issuer: string;
+  account: string;
+}
+
+export async function fetchTotpStatus(): Promise<TotpStatus> {
+  return apiFetch<TotpStatus>("/auth/totp/status/");
+}
+
+export async function startTotpSetup(): Promise<TotpSetup> {
+  return apiFetch<TotpSetup>("/auth/totp/setup/", { method: "POST" });
+}
+
+export async function confirmTotpSetup(code: string): Promise<{ backup_codes: string[] }> {
+  return apiFetch<{ backup_codes: string[] }>("/auth/totp/confirm/", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function disableTotp(password: string): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>("/auth/totp/disable/", {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
+export async function regenerateBackupCodes(): Promise<{ backup_codes: string[] }> {
+  return apiFetch<{ backup_codes: string[] }>("/auth/totp/backup-codes/", {
+    method: "POST",
+  });
 }
 
 export async function inviteUser(data: {
