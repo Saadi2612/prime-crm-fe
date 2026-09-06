@@ -8,8 +8,9 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ExternalLink, MoreHorizontal, Phone, Pencil, Trash2 } from "lucide-react";
+import { Clock, ExternalLink, MoreHorizontal, Phone, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { formatDistanceToNow } from "date-fns";
 
 interface LeadCardProps {
     lead: Lead;
@@ -51,8 +52,29 @@ export function LeadCard({ lead, onEdit, onDelete, assigneeNode, clickable }: Le
     const initials = getInitials(lead.full_name);
     const color = getAvatarColor(lead.full_name);
 
-    const projectName =
-        lead.project && typeof lead.project === "object" ? lead.project.name : null;
+    const project =
+        lead.project && typeof lead.project === "object" ? lead.project : null;
+    const projectName = project?.name ?? null;
+
+    const suggested =
+        lead.suggested_project && typeof lead.suggested_project === "object"
+            ? lead.suggested_project
+            : null;
+
+    // Shown only when no project is linked — Meta form / campaign context
+    const formInfo = !project
+        ? Array.from(
+              new Set(
+                  [lead.form_name, lead.campaign_name, lead.ad_name].filter(
+                      (v): v is string => Boolean(v),
+                  ),
+              ),
+          )
+        : [];
+
+    const receivedAt = lead.created_at
+        ? formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })
+        : null;
 
     return (
         <div
@@ -135,8 +157,19 @@ export function LeadCard({ lead, onEdit, onDelete, assigneeNode, clickable }: Le
 
             {/* Phone */}
             {lead.phone && (
-                <p className="text-[12px] text-[#94A3B8] leading-snug mb-2.5">
+                <p className="text-[12px] text-[#94A3B8] leading-snug mb-1">
                     {lead.phone}
+                </p>
+            )}
+
+            {/* Received time */}
+            {receivedAt && (
+                <p
+                    className="flex items-center gap-1 text-[11px] text-[#94A3B8] leading-snug mb-2.5"
+                    title={new Date(lead.created_at).toLocaleString()}
+                >
+                    <Clock className="w-3 h-3 shrink-0" />
+                    Received {receivedAt}
                 </p>
             )}
 
@@ -165,6 +198,25 @@ export function LeadCard({ lead, onEdit, onDelete, assigneeNode, clickable }: Le
                         {projectName}
                     </span>
                 )}
+
+                {/* No project linked — surface suggested project + Meta form details */}
+                {!projectName && suggested?.name && (
+                    <span
+                        className="inline-block text-[9px] font-bold uppercase tracking-[0.08em] text-[#94A3B8] bg-[#F1F5F9] rounded-md px-2 py-1 border border-dashed border-[#CBD5E1]"
+                        title="Suggested project — same Meta form"
+                    >
+                        {suggested.name}
+                    </span>
+                )}
+                {!projectName &&
+                    formInfo.map((info) => (
+                        <span
+                            key={info}
+                            className="inline-block text-[9px] font-bold uppercase tracking-[0.08em] text-[#94A3B8] bg-[#F1F5F9] rounded-md px-2 py-1"
+                        >
+                            {info}
+                        </span>
+                    ))}
             </div>
         </div>
     );

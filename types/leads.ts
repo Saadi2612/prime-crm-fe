@@ -83,6 +83,8 @@ export interface Lead {
   /** True when queued for distribution at next office open */
   is_queued?: boolean;
   created_at: string;
+  /** Actual receipt time (Meta lead creation time); falls back to created_at */
+  created_time?: string | null;
   updated_at: string;
 }
 
