@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
     GripVertical, AlertTriangle, LayoutGrid, List, LogIn,
     Plus, RefreshCw, Search, ExternalLink,
-    FileText, Loader2, User, Users, Download,
+    FileText, Loader2, User, Users, Download, Clock, Megaphone,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -227,6 +227,17 @@ const KanbanLeadCard = memo(function KanbanLeadCard({
     dragRef: { current: boolean };
     onNavigate: (id: string) => void;
 }) {
+    const receivedRaw = lead.created_time ?? lead.created_at;
+    const receivedAt = receivedRaw
+        ? formatDistanceToNow(new Date(receivedRaw), { addSuffix: true })
+        : null;
+
+    // Meta ad context — shown when no project is linked
+    const adLabel =
+        !lead.project && (lead.ad_name || lead.ad_id)
+            ? `Ad: ${lead.ad_name || lead.ad_id}`
+            : null;
+
     return (
         <div
             data-testid="lead-card"
@@ -248,7 +259,27 @@ const KanbanLeadCard = memo(function KanbanLeadCard({
             <h4 className="font-bold text-sm text-slate-900 mb-1 leading-snug">{lead.full_name}</h4>
 
             {lead.phone && (
-                <p className="text-slate-500 text-xs mb-3 font-mono">{lead.phone}</p>
+                <p className="text-slate-500 text-xs mb-1.5 font-mono">{lead.phone}</p>
+            )}
+
+            {receivedAt && (
+                <p
+                    className="flex items-center gap-1 text-slate-400 text-[11px] mb-3"
+                    title={new Date(receivedRaw as string).toLocaleString()}
+                >
+                    <Clock className="h-3 w-3 shrink-0" />
+                    Received {receivedAt}
+                </p>
+            )}
+
+            {adLabel && (
+                <p
+                    className="flex items-center gap-1.5 text-slate-500 text-[11px] leading-snug mb-3"
+                    title={adLabel}
+                >
+                    <Megaphone className="h-3 w-3 shrink-0 text-slate-400" />
+                    <span className="truncate">{adLabel}</span>
+                </p>
             )}
 
             <div className="flex flex-wrap gap-1.5">
