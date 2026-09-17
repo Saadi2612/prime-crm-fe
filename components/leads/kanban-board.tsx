@@ -9,7 +9,8 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
-import type { Lead, Stage } from "@/types/leads";
+import type { Lead, LeadStatus, Stage } from "@/types/leads";
+import { LEAD_STATUSES } from "@/types/leads";
 import type { TeamMember } from "@/lib/api";
 import { fetchLeads, fetchLeadsPaginated, fetchStages, updateLeadStage, fetchTeamMembers, transferLead } from "@/lib/api";
 import { toast } from "sonner";
@@ -58,6 +59,15 @@ import Link from "next/link";
 type ViewMode = "kanban" | "list";
 
 const PAGE_SIZE = 20;
+
+const ALL_STATUSES_VALUE = LEAD_STATUSES.join(",");
+
+/** "all" → status__in across every status; a single status → status= */
+function statusQueryParams(statusFilter: LeadStatus | "all") {
+    return statusFilter === "all"
+        ? { status__in: ALL_STATUSES_VALUE }
+        : { status: statusFilter };
+}
 
 type ColState = {
     leads: Lead[];
@@ -356,6 +366,7 @@ export function KanbanBoardView() {
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [stageFilter, setStageFilter] = useState("all");
+    const [statusFilter, setStatusFilter] = useState<LeadStatus | "all">("active");
 
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(search), 400);
@@ -408,6 +419,7 @@ export function KanbanBoardView() {
                         page: 1,
                         page_size: PAGE_SIZE,
                         search: debouncedSearch || undefined,
+                        ...statusQueryParams(statusFilter),
                     });
                     if (cancelled) return;
                     setColStates(prev => ({
@@ -427,7 +439,7 @@ export function KanbanBoardView() {
         })();
 
         return () => { cancelled = true; };
-    }, [stages, stageFilter, debouncedSearch]);
+    }, [stages, stageFilter, statusFilter, debouncedSearch]);
 
     // ── List view: fetch all leads only when list is active ───────────────────
     useEffect(() => {
@@ -443,6 +455,7 @@ export function KanbanBoardView() {
                     is_paginated: false,
                     stage: stageFilter !== "all" ? stageFilter : undefined,
                     search: debouncedSearch || undefined,
+                    ...statusQueryParams(statusFilter),
                 });
                 if (!cancelled) setListLeads(leads);
             } catch (e) {
@@ -452,7 +465,7 @@ export function KanbanBoardView() {
             }
         })();
         return () => { cancelled = true; };
-    }, [viewMode, stageFilter, debouncedSearch]);
+    }, [viewMode, stageFilter, statusFilter, debouncedSearch]);
 
     // ── Load next page for a single column ────────────────────────────────────
     const loadMore = useCallback(async (stageId: string) => {
@@ -467,6 +480,7 @@ export function KanbanBoardView() {
                 page: nextPage,
                 page_size: PAGE_SIZE,
                 search: debouncedSearch || undefined,
+                ...statusQueryParams(statusFilter),
             });
             setColStates(prev => ({
                 ...prev,
@@ -482,7 +496,7 @@ export function KanbanBoardView() {
             setColStates(prev => ({ ...prev, [stageId]: { ...prev[stageId], loading: false } }));
             setError(e instanceof Error ? e.message : String(e));
         }
-    }, [colStates, debouncedSearch]);
+    }, [colStates, statusFilter, debouncedSearch]);
 
     // ── Manual refresh (after assign / create) ────────────────────────────────
     const loadLeads = useCallback(() => {
@@ -497,6 +511,7 @@ export function KanbanBoardView() {
             try {
                 const data = await fetchLeadsPaginated({
                     stage: stage.id, page: 1, page_size: PAGE_SIZE, search: debouncedSearch || undefined,
+                    ...statusQueryParams(statusFilter),
                 });
                 setColStates(prev => ({
                     ...prev,
@@ -510,7 +525,7 @@ export function KanbanBoardView() {
                 }));
             }
         });
-    }, [stages, stageFilter, debouncedSearch]);
+    }, [stages, stageFilter, statusFilter, debouncedSearch]);
 
     // ── Visual-only update during drag — no API ───────────────────────────────
     const handleColumnsChange = useCallback((next: Record<string, Lead[]>) => {
@@ -615,6 +630,21 @@ export function KanbanBoardView() {
 
                     {/* Right-side toolbar inline with title */}
                     <div className="flex items-center gap-3 shrink-0">
+                        {/* Status filter */}
+                        <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as LeadStatus | "all")}>
+                            <SelectTrigger className="h-9 w-auto gap-2 border border-slate-200 bg-white text-slate-600 font-semibold text-sm rounded-lg px-3">
+                                <SelectValue placeholder="Active" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Statuses</SelectItem>
+                                {LEAD_STATUSES.map((s) => (
+                                    <SelectItem key={s} value={s}>
+                                        <span className="capitalize">{s}</span>
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+
                         {/* All-stages filter button */}
                         <Select value={stageFilter} onValueChange={setStageFilter}>
                             <SelectTrigger className="h-9 w-auto gap-2 border border-slate-200 bg-white text-slate-600 font-semibold text-sm rounded-lg px-3">

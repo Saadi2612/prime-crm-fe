@@ -334,6 +334,8 @@ export async function fetchLeads(params?: LeadsQueryParams): Promise<Lead[]> {
   if (params?.page) query.set("page", String(params.page));
   if (params?.page_size) query.set("page_size", String(params.page_size));
   if (params?.assigned_to) query.set("assigned_to", params.assigned_to);
+  if (params?.status) query.set("status", params.status);
+  if (params?.status__in) query.set("status__in", params.status__in);
   if (params?.is_paginated === false) query.set("is_paginated", "false");
   const qs = query.toString();
   const data = await apiFetch<Lead[] | { results: Lead[] }>(`/leads/${qs ? `?${qs}` : ""}`);
@@ -354,6 +356,8 @@ export async function fetchLeadsPaginated(params?: Omit<LeadsQueryParams, "is_pa
   if (params?.page) query.set("page", String(params.page));
   if (params?.page_size) query.set("page_size", String(params.page_size));
   if (params?.assigned_to) query.set("assigned_to", params.assigned_to);
+  if (params?.status) query.set("status", params.status);
+  if (params?.status__in) query.set("status__in", params.status__in);
   const qs = query.toString();
   const data = await apiFetch<PaginatedLeads | Lead[]>(`/leads/${qs ? `?${qs}` : ""}`);
   if (Array.isArray(data)) return { results: data, count: data.length, next: null, previous: null };

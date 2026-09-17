@@ -51,9 +51,14 @@ export interface ProjectRef {
   image?: string | null;
 }
 
+export type LeadStatus = "active" | "inactive" | "draft" | "archived" | "deleted";
+
+export const LEAD_STATUSES: LeadStatus[] = ["active", "inactive", "draft", "archived", "deleted"];
+
 export interface Lead {
   id: string;
   full_name: string;
+  status: LeadStatus;
   phone?: string;
   email?: string;
   job_title?: string;
@@ -93,6 +98,10 @@ export interface LeadsQueryParams {
   page_size?: number;
   assigned_to?: string;
   is_paginated?: boolean;
+  /** Single status filter, e.g. "active". Backend defaults to "active" when neither this nor status__in is set. */
+  status?: LeadStatus;
+  /** Comma-separated statuses, e.g. "active,inactive". Use to fetch across multiple/all statuses. */
+  status__in?: string;
 }
 
 export interface FollowUpAlert {
